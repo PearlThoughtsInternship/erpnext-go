@@ -209,58 +209,139 @@ ERPNext is a mature, feature-rich ERP built on the Frappe framework (Python). Wh
 
 ### Legacy System (ERPNext/Frappe)
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  🐍 Frappe Framework                                        │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │  📄 Document Base Class                               │  │
-│  │  • Magic field access (self.fieldname)               │  │
-│  │  • Automatic DB persistence                          │  │
-│  │  • Hook system (validate, on_save, on_trash)         │  │
-│  │  • Permission enforcement                            │  │
-│  └───────────────────────────────────────────────────────┘  │
-│                           │                                 │
-│  ┌───────────────────────▼───────────────────────────────┐  │
-│  │  💳 DocType: Mode of Payment                          │  │
-│  │  • mode_of_payment.py (business logic)               │  │
-│  │  • mode_of_payment.json (schema definition)          │  │
-│  │  • mode_of_payment.js (UI controller)                │  │
-│  └───────────────────────────────────────────────────────┘  │
-│                           │                                 │
-│  ┌───────────────────────▼───────────────────────────────┐  │
-│  │  🗄️ frappe.db / frappe.get_value()                    │  │
-│  │  • Direct SQL to MariaDB                             │  │
-│  │  • Redis caching layer                               │  │
-│  └───────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
+> *"The first step in legacy modernization is understanding what you're replacing."* — Michael Feathers, Working Effectively with Legacy Code
+
+```mermaid
+graph TB
+    subgraph FRAPPE["🐍 Frappe Framework"]
+        direction TB
+
+        subgraph DOC["📄 Document Base Class"]
+            MAGIC["Magic field access<br/>(self.fieldname)"]
+            PERSIST["Automatic DB persistence"]
+            HOOKS["Hook system<br/>(validate, on_save, on_trash)"]
+            PERMS["Permission enforcement"]
+        end
+
+        subgraph DOCTYPE["💳 DocType: Mode of Payment"]
+            PY["mode_of_payment.py<br/>(business logic)"]
+            JSON["mode_of_payment.json<br/>(schema definition)"]
+            JS["mode_of_payment.js<br/>(UI controller)"]
+        end
+
+        subgraph DB["🗄️ Data Layer"]
+            FRAPPE_DB["frappe.db / frappe.get_value()"]
+            MARIA[(MariaDB)]
+            REDIS[(Redis Cache)]
+        end
+
+        DOC --> DOCTYPE
+        DOCTYPE --> DB
+        FRAPPE_DB --> MARIA
+        FRAPPE_DB --> REDIS
+    end
+
+    style FRAPPE fill:#3776ab,color:#fff
+    style DOC fill:#ffd43b,color:#000
+    style DOCTYPE fill:#306998,color:#fff
+    style DB fill:#4479a1,color:#fff
 ```
 
-### Modernized System (Go)
+### Modernized System (Go) — Hexagonal Architecture
 
+> *"The hexagon is intended to visually emphasize the inside/outside asymmetry."* — Alistair Cockburn, Ports and Adapters
+
+```mermaid
+graph TB
+    subgraph EXTERNAL["External World"]
+        HTTP["🌐 HTTP API"]
+        CLI["⌨️ CLI"]
+        GRPC["📡 gRPC"]
+    end
+
+    subgraph ADAPTERS_IN["Inbound Adapters (Driving)"]
+        HTTP_ADAPTER["HTTP Handler"]
+        CLI_ADAPTER["CLI Handler"]
+    end
+
+    subgraph HEXAGON["🔷 Domain Core (Pure Go)"]
+        direction TB
+
+        subgraph DOMAIN["📦 Domain Layer"]
+            MOP["ModeOfPayment"]
+            TAXCALC["Calculator"]
+            ENTITIES["Entities & Value Objects"]
+        end
+
+        subgraph PORTS["🔌 Port Interfaces"]
+            ACCOUNT_LOOKUP["«interface»<br/>AccountLookup"]
+            POS_CHECKER["«interface»<br/>POSChecker"]
+            PRECISION["«interface»<br/>PrecisionProvider"]
+        end
+
+        DOMAIN --> PORTS
+    end
+
+    subgraph ADAPTERS_OUT["Outbound Adapters (Driven)"]
+        MOCK["🧪 Mock Adapters<br/>(In-memory, Deterministic)"]
+        PROD["🏭 Production Adapters<br/>(PostgreSQL, Redis)"]
+    end
+
+    subgraph INFRA["Infrastructure"]
+        POSTGRES[(PostgreSQL)]
+        REDIS_NEW[(Redis)]
+    end
+
+    HTTP --> HTTP_ADAPTER
+    CLI --> CLI_ADAPTER
+    HTTP_ADAPTER --> HEXAGON
+    CLI_ADAPTER --> HEXAGON
+    PORTS --> MOCK
+    PORTS --> PROD
+    PROD --> POSTGRES
+    PROD --> REDIS_NEW
+
+    style HEXAGON fill:#00add8,color:#fff
+    style DOMAIN fill:#007d9c,color:#fff
+    style PORTS fill:#5dc9e2,color:#000
+    style ADAPTERS_OUT fill:#f0f0f0,color:#000
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  🔵 Go Application                                          │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │  📦 Domain Layer (Pure Business Logic)                │  │
-│  │  • Structs with explicit fields                      │  │
-│  │  • Validation methods                                │  │
-│  │  • No framework dependencies                         │  │
-│  └───────────────────────────────────────────────────────┘  │
-│                           │                                 │
-│  ┌───────────────────────▼───────────────────────────────┐  │
-│  │  🔌 Port Interfaces (Dependency Inversion)            │  │
-│  │  • AccountLookup                                     │  │
-│  │  • POSChecker                                        │  │
-│  │  • Repository[T]                                     │  │
-│  └───────────────────────────────────────────────────────┘  │
-│           │                               │                 │
-│  ┌────────▼────────┐            ┌─────────▼──────────┐      │
-│  │  🧪 Mock        │            │  🏭 Production     │      │
-│  │  Adapters       │            │  Adapters          │      │
-│  │  • In-memory    │            │  • PostgreSQL      │      │
-│  │  • Deterministic│            │  • Redis cache     │      │
-│  └─────────────────┘            └────────────────────┘      │
-└─────────────────────────────────────────────────────────────┘
+
+### Bounded Contexts (DDD Strategic Design)
+
+> *"A Bounded Context delimits the applicability of a particular model."* — Eric Evans, Domain-Driven Design
+
+```mermaid
+graph LR
+    subgraph LEGACY["🐍 ERPNext (Legacy Context)"]
+        L_MOP["Mode of Payment"]
+        L_TAX["Taxes & Totals"]
+        L_INV["Sales Invoice"]
+        L_PAY["Payment Entry"]
+    end
+
+    subgraph MODERNIZED["🔵 Go (Modernized Context)"]
+        M_MOP["modeofpayment<br/>Package"]
+        M_TAX["taxcalc<br/>Package"]
+    end
+
+    subgraph ACL["🛡️ Anti-Corruption Layer"]
+        TRANSLATOR["Model Translator"]
+        ADAPTER["Protocol Adapter"]
+    end
+
+    L_MOP -.->|"Shadow Mode"| ACL
+    L_TAX -.->|"Shadow Mode"| ACL
+    ACL --> M_MOP
+    ACL --> M_TAX
+
+    L_INV --> L_MOP
+    L_INV --> L_TAX
+    L_PAY --> L_MOP
+
+    style LEGACY fill:#3776ab,color:#fff
+    style MODERNIZED fill:#00add8,color:#fff
+    style ACL fill:#ff6b6b,color:#fff
 ```
 
 ---
@@ -269,22 +350,76 @@ ERPNext is a mature, feature-rich ERP built on the Frappe framework (Python). Wh
 
 ### Concept
 
-The Strangler Fig is a tree that grows around its host, eventually replacing it entirely while the host continues to function.
+> *"The Strangler Fig grows around its host tree, eventually replacing it entirely while the host continues to function."* — Martin Fowler
 
+```mermaid
+flowchart LR
+    subgraph P1["Phase 1: Identify"]
+        direction TB
+        L1["🐍 Legacy System"]
+        M1["📦 Module"]
+        L1 --- M1
+    end
+
+    subgraph P2["Phase 2: Extract"]
+        direction TB
+        L2["🐍 Legacy System"]
+        M2["📦 Module"]
+        G2["🔵 Go Module<br/>(shadow)"]
+        L2 --- M2
+        M2 -.->|"copy"| G2
+    end
+
+    subgraph P3["Phase 3: Redirect"]
+        direction TB
+        L3["🐍 Legacy System"]
+        M3["📦 Module<br/>(dormant)"]
+        G3["🔵 Go Module<br/>(primary)"]
+        L3 -.- M3
+        L3 ==>|"route"| G3
+    end
+
+    subgraph P4["Phase 4: Remove"]
+        direction TB
+        G4["🔵 Go Module<br/>(sole)"]
+    end
+
+    P1 ==> P2 ==> P3 ==> P4
+
+    style P1 fill:#ffebee,color:#000
+    style P2 fill:#fff3e0,color:#000
+    style P3 fill:#e8f5e9,color:#000
+    style P4 fill:#e3f2fd,color:#000
+    style G2 fill:#00add8,color:#fff
+    style G3 fill:#00add8,color:#fff
+    style G4 fill:#00add8,color:#fff
 ```
-Phase 1: Identify         Phase 2: Extract        Phase 3: Redirect       Phase 4: Remove
-┌─────────────┐           ┌─────────────┐         ┌─────────────┐         ┌─────────────┐
-│   Legacy    │           │   Legacy    │         │   Legacy    │         │             │
-│  ┌───────┐  │           │  ┌───────┐  │         │  ┌ ─ ─ ─ ┐  │         │             │
-│  │Module │  │    ══►    │  │Module │──┼──┐      │  │Module │──┼──┐      │             │
-│  └───────┘  │           │  └───────┘  │  │      │  └ ─ ─ ─ ┘  │  │      │             │
-│             │           │             │  │      │             │  │      │             │
-└─────────────┘           └─────────────┘  │      └─────────────┘  │      └─────────────┘
-                                           │                       │
-                          ┌────────────────▼─┐    ┌────────────────▼─┐    ┌─────────────┐
-                          │   Go Module      │    │   Go Module      │    │  Go Module  │
-                          │   (shadow)       │    │   (primary)      │    │  (sole)     │
-                          └──────────────────┘    └──────────────────┘    └─────────────┘
+
+### Migration State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> Legacy: System Running
+
+    Legacy --> Identified: Select Module
+    Identified --> Extracted: Reimplement in Go
+    Extracted --> Shadowing: Deploy Shadow Mode
+    Shadowing --> Redirected: Switch Traffic
+    Redirected --> Removed: Deprecate Python
+
+    Removed --> [*]: Migration Complete
+
+    note right of Shadowing
+        Both systems run
+        Compare outputs
+        Feature flags control routing
+    end note
+
+    note right of Extracted
+        Go module has tests
+        Parity verified
+        No production traffic yet
+    end note
 ```
 
 ### Implementation Phases
@@ -301,7 +436,171 @@ Phase 1: Identify         Phase 2: Extract        Phase 3: Redirect       Phase 
 
 ## 🎯 Design Choices
 
+### UML Class Diagram — Domain Model
+
+> *"The domain model is a rigorously organized and selective abstraction of knowledge."* — Eric Evans, Domain-Driven Design
+
+```mermaid
+classDiagram
+    direction TB
+
+    class ModeOfPayment {
+        +string Name
+        +PaymentType Type
+        +bool Enabled
+        +[]ModeOfPaymentAccount Accounts
+        +ValidateRepeatingCompanies() error
+        +ValidateAccounts(AccountLookup) error
+        +ValidatePOSModeOfPayment(POSChecker) error
+        +Validate(AccountLookup, POSChecker) error
+    }
+
+    class ModeOfPaymentAccount {
+        +string Company
+        +string DefaultAccount
+    }
+
+    class PaymentType {
+        <<enumeration>>
+        Cash
+        Bank
+        General
+        Phone
+    }
+
+    class AccountLookup {
+        <<interface>>
+        +GetAccountCompany(string) (string, error)
+    }
+
+    class POSChecker {
+        <<interface>>
+        +GetPOSProfilesUsingMode(string) ([]string, error)
+    }
+
+    class ValidationError {
+        +error Err
+        +string Details
+        +Error() string
+        +Unwrap() error
+    }
+
+    ModeOfPayment *-- ModeOfPaymentAccount : contains
+    ModeOfPayment --> PaymentType : uses
+    ModeOfPayment ..> AccountLookup : depends on
+    ModeOfPayment ..> POSChecker : depends on
+    ModeOfPayment ..> ValidationError : returns
+```
+
+### UML Class Diagram — Tax Calculator
+
+```mermaid
+classDiagram
+    direction TB
+
+    class Calculator {
+        +*Document Doc
+        +PrecisionProvider Precision
+        +Calculate() error
+        -calculateItemValues()
+        -calculateNetTotal()
+        -calculateTaxes()
+        -getCurrentTaxAmount(item, tax, rate) float64
+        -setCumulativeTotal(tax)
+        -setInCompanyCurrency()
+    }
+
+    class Document {
+        +string Currency
+        +float64 ConversionRate
+        +[]*LineItem Items
+        +[]*TaxRow Taxes
+        +float64 NetTotal
+        +float64 GrandTotal
+    }
+
+    class LineItem {
+        +string ItemCode
+        +float64 Qty
+        +float64 Rate
+        +float64 Amount
+        +float64 NetAmount
+        +float64 DiscountPercentage
+    }
+
+    class TaxRow {
+        +string AccountHead
+        +ChargeType ChargeType
+        +float64 Rate
+        +int RowID
+        +float64 TaxAmount
+        +float64 Total
+    }
+
+    class ChargeType {
+        <<enumeration>>
+        Actual
+        OnNetTotal
+        OnPreviousRowAmount
+        OnPreviousRowTotal
+        OnItemQuantity
+    }
+
+    class PrecisionProvider {
+        <<interface>>
+        +GetPrecision(string) int
+    }
+
+    Calculator --> Document : processes
+    Calculator ..> PrecisionProvider : depends on
+    Document *-- LineItem : contains
+    Document *-- TaxRow : contains
+    TaxRow --> ChargeType : uses
+```
+
+### Sequence Diagram — Validation Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant MOP as ModeOfPayment
+    participant AL as AccountLookup
+    participant PC as POSChecker
+
+    Client->>MOP: Validate(lookup, checker)
+    activate MOP
+
+    Note over MOP: Rule 1: Check duplicates
+    MOP->>MOP: ValidateRepeatingCompanies()
+    alt Duplicate Found
+        MOP-->>Client: ErrDuplicateCompany
+    end
+
+    Note over MOP: Rule 2: Check account-company match
+    loop For each account
+        MOP->>AL: GetAccountCompany(defaultAccount)
+        AL-->>MOP: company
+        alt Mismatch
+            MOP-->>Client: ErrAccountMismatch
+        end
+    end
+
+    Note over MOP: Rule 3: Check POS usage
+    alt Mode is disabled
+        MOP->>PC: GetPOSProfilesUsingMode(name)
+        PC-->>MOP: []profiles
+        alt In use
+            MOP-->>Client: ErrModeInUse
+        end
+    end
+
+    MOP-->>Client: nil (success)
+    deactivate MOP
+```
+
 ### 1. Interface-Based Dependency Injection
+
+> *"Depend on abstractions, not concretions."* — SOLID Principles (Dependency Inversion)
 
 **Problem:** Frappe's `frappe.get_value()` and `frappe.db.sql()` are global functions that couple business logic to the database.
 
@@ -411,6 +710,46 @@ erpnext-go/
     ├── 📄 model.go                 # Data structures (170 lines)
     ├── 📄 calculator.go            # Business logic (350+ lines)
     └── 📄 calculator_test.go       # 24 test cases
+```
+
+### Module Dependency Graph
+
+```mermaid
+graph TB
+    subgraph ERPNEXT_GO["erpnext-go"]
+        direction TB
+
+        subgraph MOP["📦 modeofpayment"]
+            MOP_MODEL["model.go<br/>(structs, enums)"]
+            MOP_VAL["validation.go<br/>(business rules)"]
+            MOP_TEST["validation_test.go"]
+        end
+
+        subgraph TAX["📦 taxcalc"]
+            TAX_MODEL["model.go<br/>(Document, LineItem, TaxRow)"]
+            TAX_CALC["calculator.go<br/>(Calculate, getTaxAmount)"]
+            TAX_TEST["calculator_test.go"]
+        end
+
+        subgraph FUTURE["📦 future packages"]
+            REPO["repository<br/>(planned)"]
+            API["api<br/>(planned)"]
+        end
+
+        MOP_VAL --> MOP_MODEL
+        MOP_TEST -.->|tests| MOP_VAL
+
+        TAX_CALC --> TAX_MODEL
+        TAX_TEST -.->|tests| TAX_CALC
+
+        API -.->|will use| MOP
+        API -.->|will use| TAX
+        REPO -.->|will implement| MOP
+    end
+
+    style MOP fill:#4caf50,color:#fff
+    style TAX fill:#2196f3,color:#fff
+    style FUTURE fill:#9e9e9e,color:#fff
 ```
 
 ### Source Mapping
@@ -601,6 +940,58 @@ func (m *ModeOfPayment) ValidatePOSModeOfPayment(
 **File:** `erpnext/controllers/taxes_and_totals.py`
 
 This is the core calculation engine used by Sales Invoice, Purchase Invoice, Sales Order, Purchase Order, and Quotation documents.
+
+### Tax Calculation Pipeline
+
+```mermaid
+flowchart TB
+    subgraph INPUT["📥 Input"]
+        DOC["Document<br/>(Items + Taxes)"]
+    end
+
+    subgraph CALC["🔄 Calculate()"]
+        direction TB
+        ITEM["calculateItemValues()<br/>Rate, Discount, Amount"]
+        NET["calculateNetTotal()<br/>Sum Item Amounts"]
+        TAX["calculateTaxes()<br/>Apply Tax Rules"]
+        CURR["setInCompanyCurrency()<br/>Currency Conversion"]
+
+        ITEM --> NET --> TAX --> CURR
+    end
+
+    subgraph OUTPUT["📤 Output"]
+        RESULT["Document with<br/>GrandTotal, TaxAmounts"]
+    end
+
+    DOC --> CALC --> RESULT
+
+    style INPUT fill:#e3f2fd,color:#000
+    style CALC fill:#fff3e0,color:#000
+    style OUTPUT fill:#e8f5e9,color:#000
+```
+
+### Tax Charge Type Decision Tree
+
+```mermaid
+flowchart TD
+    START["getCurrentTaxAmount()"] --> CHECK{"ChargeType?"}
+
+    CHECK -->|"Actual"| ACTUAL["tax.Rate × item.NetAmount<br/>÷ doc.NetTotal"]
+    CHECK -->|"On Net Total"| NET["taxRate ÷ 100<br/>× item.NetAmount"]
+    CHECK -->|"On Previous Row Amount"| PREV_AMT["taxRate ÷ 100<br/>× prevTax.TaxAmountForCurrentItem"]
+    CHECK -->|"On Previous Row Total"| PREV_TOT["taxRate ÷ 100<br/>× prevTax.GrandTotalForCurrentItem"]
+    CHECK -->|"On Item Quantity"| QTY["taxRate<br/>× item.Qty"]
+
+    ACTUAL --> RETURN["return currentTaxAmount"]
+    NET --> RETURN
+    PREV_AMT --> RETURN
+    PREV_TOT --> RETURN
+    QTY --> RETURN
+
+    style START fill:#00add8,color:#fff
+    style CHECK fill:#ffd43b,color:#000
+    style RETURN fill:#4caf50,color:#fff
+```
 
 ### Capabilities Migrated
 
@@ -833,8 +1224,21 @@ func (c *Calculator) getCurrentTaxAmount(
 
 ## 📖 References
 
+### Classic Software Engineering Books
+
+| Book | Author | Key Concepts Used |
+|------|--------|-------------------|
+| [Domain-Driven Design](https://www.oreilly.com/library/view/domain-driven-design-tackling/0321125215/) | Eric Evans | Bounded Contexts, Anti-Corruption Layer, Ubiquitous Language |
+| [Working Effectively with Legacy Code](https://www.oreilly.com/library/view/working-effectively-with/0131177052/) | Michael Feathers | Seams, Characterization Tests, Dependency Breaking |
+| [Implementing DDD](https://www.oreilly.com/library/view/implementing-domain-driven-design/9780133039900/) | Vaughn Vernon | Aggregates, Repositories, Domain Events |
+| [Monolith to Microservices](https://www.oreilly.com/library/view/monolith-to-microservices/9781492047834/) | Sam Newman | Strangler Fig, Database Decomposition |
+| [Refactoring](https://www.oreilly.com/library/view/refactoring-improving-the/9780134757681/) | Martin Fowler | Code Smells, Extract Method, Replace Conditional |
+| [Clean Architecture](https://www.oreilly.com/library/view/clean-architecture-a/9780134494272/) | Robert C. Martin | Dependency Rule, Ports & Adapters |
+
+### Online Resources
+
 - [Strangler Fig Pattern](https://martinfowler.com/bliki/StranglerFigApplication.html) — Martin Fowler
-- [Working Effectively with Legacy Code](https://www.oreilly.com/library/view/working-effectively-with/0131177052/) — Michael Feathers
+- [Hexagonal Architecture](https://alistair.cockburn.us/hexagonal-architecture/) — Alistair Cockburn
 - [ERPNext Documentation](https://docs.erpnext.com/)
 - [Frappe Framework](https://frappeframework.com/)
 
