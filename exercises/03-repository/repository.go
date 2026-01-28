@@ -101,3 +101,5 @@ func (s *InMemoryStore) Clear() {
 // Verify InMemoryStore implements GLEntryStore at compile time.
 // This line causes a compile error if InMemoryStore doesn't implement the interface.
 var _ GLEntryStore = (*InMemoryStore)(nil)
+
+// 🌳 Stage3Clue: GitHub Issue #42 knows what happens next

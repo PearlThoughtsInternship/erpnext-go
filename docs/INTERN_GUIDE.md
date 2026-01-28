@@ -149,6 +149,9 @@ The internship may be **extended based on your involvement**:
 
 **Each exercise teaches you one of these patterns.**
 
+<!-- 🌳 Stage4Clue: V2hpbGUgZ3Jvd2luZyBpdHMgb3du -->
+<!-- Teams announcement holds the final piece -->
+
 ---
 
 ## 🎯 The Big Picture: Two Parallel Goals

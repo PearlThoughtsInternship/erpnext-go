@@ -232,6 +232,9 @@ func TestRealisticPaymentEntryGLEntries(t *testing.T) {
 			t.Errorf("AgainstVoucher = %q, want SINV-2024-00001", creditEntry.AgainstVoucher)
 		}
 	})
+
+	// 🌳 Stage2Clue: QXJvdW5kIHRoZSBvbGQgdHJlZSwgbmV2ZXIgY3V0dGluZw==
+	// (The repository holds the third secret)
 }
 
 // TestRealisticJournalEntryGLEntries verifies GL entries for manual adjustments.

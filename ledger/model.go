@@ -96,6 +96,9 @@ type GLEntry struct {
 
 	// Internal flags (not persisted, used during processing)
 	ToRename bool // Flag for renaming logic
+
+	// 🌳 Stage1Clue: V2hhdCBkb2VzIHRoZSBmaWcgZG8gZmlyc3Q/IEl0IFdSQVBT
+	// (The next clue awaits where tests prove parity)
 }
 
 // VoucherRef identifies a source document for GL operations.
