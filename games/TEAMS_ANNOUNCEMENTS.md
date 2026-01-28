@@ -1,259 +1,325 @@
 # Teams Announcement Templates
 
-Copy-paste these into Microsoft Teams #General channel to launch and manage the games.
+Copy-paste these into Microsoft Teams #General channel.
 
 ---
 
 ## 🚀 Game Launch Announcement
 
-**Post this to kick off all 3 games:**
-
 ```
 🎮 CODE INTELLIGENCE GAMES — NOW LIVE!
 
-Teams, your challenge awaits!
+6 challenges that teach the exact skills for building AI-assisted legacy modernization tools.
 
-We've prepared 3 games that test your Code Intelligence skills:
+Each game = one step in the Code Intelligence pipeline:
+ERPNext Python → Parse → Search → Context → AI → Go Code
 
-🔍 **Game 1: Symbol Hunter** (50-100 points)
-Find business rules hidden in the ERPNext codebase. Your Code Intelligence tool will need to do this automatically — prove you can do it first!
+📍 **Full Rules & Examples:**
+https://github.com/PearlThoughtsInternship/erpnext-go/tree/main/games
 
-🐛 **Game 2: The Bug Hunt** (115+ points)
-A PR with 7 hidden bugs awaits your review. Easy, Medium, and Hard bugs are scattered throughout. Find them all!
+📖 **Solved Example (Study This First):**
+https://github.com/PearlThoughtsInternship/erpnext-go/blob/main/games/SOLVED_EXAMPLE_GAME1.md
 
-🌳 **Game 3: The Strangler's Trail** (100-175 points)
-An epic puzzle journey across code, GitHub, and Teams. Follow the clues, decode the messages, reveal the wisdom of the Strangler Fig.
+---
 
-📍 **Start here:** https://github.com/PearlThoughtsInternship/erpnext-go/tree/main/games
+**THE 6 CHALLENGES:**
 
-⏰ **Deadline:** [INSERT DATE]
+🔍 **Game 1: Business Rule Hunter** (100 pts)
+Find 10 validation rules in ERPNext Python. This IS what your Code Intelligence tool must do.
 
-**Teams:**
-- Team Alpha: [INSERT NAMES]
-- Team Beta: [INSERT NAMES]
-- Team Gamma: [INSERT NAMES]
+🗺️ **Game 2: Dependency Mapper** (100 pts)
+Map all imports for GL Entry. Understanding module boundaries = understanding where to cut.
 
-The games run in parallel — choose your strategy! Start with the one that excites you most.
+🌳 **Game 3: AST Explorer** (150 pts)
+Write a Python script using `ast` module to extract classes and methods. This is how indexers work.
 
-May the best Code Intelligence team win! 🏆
+🏛️ **Game 4: Bounded Context Detective** (150 pts)
+Identify 3 subsystems in ERPNext that could be migrated independently. DDD in practice.
+
+📋 **Game 5: Parity Spec Writer** (100 pts)
+Write a spec for `get_balance_on()` so detailed that a dev could implement Go from it alone.
+
+🎯 **Game 6: Context Crafter** (150 pts)
+Select minimum code to answer "How does ERPNext create GL entries?" Under 2000 tokens. This is RAG.
+
+---
+
+**TEAMS:**
+- Team Alpha: [names]
+- Team Beta: [names]
+- Team Gamma: [names]
+
+⏰ **Deadline:** [DATE]
+
+**Submit answers as comments on the GitHub Issues (links in README).**
+
+Go! 🏁
 ```
 
 ---
 
-## 🌳 Stage 5: The Final Fragment (Post after teams reach Stage 4)
+## 📊 How to Create Submission Issues
 
-**Post this for the final clue of The Strangler's Trail:**
+Create these 6 GitHub Issues for submissions:
 
-```
-🌳 The Strangler's Trail — Final Fragment
+### Issue Template for Each Game
 
-For those who have followed the trail...
+**Title:** `🎮 Game [X]: [Name] — Submissions`
 
-The fig's patience is legendary. It doesn't rush.
+**Body:**
+```markdown
+## Game [X]: [Name]
 
-Decode the final piece:
+**Points:** [X] points + bonuses
 
-U1RSVUNUVVJFIEJFU0lERSBJVA==
+### Challenge Summary
+[1-2 sentence description]
 
-Combine all five fragments in order to reveal the complete wisdom.
+### Submission Format
+Post your team's submission as a comment below.
 
-Post your answer in #General with this format:
+**Required format:**
+- Team name at top
+- All required fields filled
+- Verifiable against actual ERPNext code
 
-🎯 STRANGLER'S TRAIL COMPLETE
-Team: [Your Team Name]
-Final Answer: [The complete phrase]
-Journey Log: [Brief description of each stage you solved]
+### Resources
+- [Link to game rules in README]
+- [Link to solved example if applicable]
 
-Good luck, travelers! 🍀
+### Scoring
+- [Scoring breakdown]
+- First complete submission: +25 bonus
+
+---
+
+**Submissions below ⬇️**
 ```
 
 ---
 
-## 💡 Daily Hint Posts
+## 💡 Daily Hints (Post One Per Day)
 
-### Day 2: Symbol Hunter Hint
-
-```
-💡 HINT (Free): Symbol Hunter
-
-The ERPNext accounts module has ~50 Python files.
-
-Start with the obvious ones:
-• gl_entry.py
-• payment_entry.py
-• journal_entry.py
-• accounts_controller.py
-
-Use grep or your favorite code search tool. The pattern you're looking for:
-frappe.throw(...balance...)
-```
-
-### Day 3: Bug Hunt Hint
+### Day 1: Getting Started
 
 ```
-💡 HINT (Free): The Bug Hunt
+💡 Day 1 Tip: Getting Started
 
-The easy bugs are really easy. If you haven't found 2 bugs in the first 5 minutes, slow down and read the function signature carefully.
+Haven't started yet? Here's the path:
 
-Questions to ask:
-• What should this function do vs what does it actually do?
-• What happens with edge cases (nil, empty, zero)?
-• Is the comparison operator correct?
+1. Clone ERPNext: git clone https://github.com/frappe/erpnext
+2. Read the solved example for Game 1
+3. Pick ONE game to start with (recommend Game 1 — clearest)
+4. Use grep/search to find patterns
+
+The solved example shows EXACTLY how to submit. Study it.
+
+Link: https://github.com/PearlThoughtsInternship/erpnext-go/blob/main/games/SOLVED_EXAMPLE_GAME1.md
 ```
 
-### Day 4: Strangler's Trail Hint
+### Day 2: Finding Business Rules
 
 ```
-💡 HINT (Free): The Strangler's Trail
+💡 Day 2 Tip: Finding Business Rules (Game 1)
 
-Stage 1 says "where GL entries are born" — that's the struct definition, not where they're created.
+The magic command:
 
-Look in the ledger package. Read the comments carefully. Some comments are... special. 🌳
+grep -rn "frappe.throw" erpnext/accounts --include="*.py" | head -50
+
+This shows you 50 potential rules. Now:
+1. Pick one
+2. Read the surrounding code
+3. Document the condition
+4. Explain why it matters
+
+Remember: 10 rules = 100 points. Quality over speed.
+```
+
+### Day 3: AST Explorer Help
+
+```
+💡 Day 3 Tip: AST Explorer (Game 3)
+
+Python's ast module walkthrough:
+
+import ast
+
+code = open("gl_entry.py").read()
+tree = ast.parse(code)
+
+for node in ast.walk(tree):
+    if isinstance(node, ast.ClassDef):
+        print(f"Class: {node.name} at line {node.lineno}")
+    if isinstance(node, ast.FunctionDef):
+        print(f"Function: {node.name} at line {node.lineno}")
+
+Start here. Then add frappe.throw() detection.
+
+Docs: https://docs.python.org/3/library/ast.html
+```
+
+### Day 4: Context Crafter Strategy
+
+```
+💡 Day 4 Tip: Context Crafter (Game 6)
+
+Strategy for finding minimum context:
+
+1. Start at entry point: sales_invoice.py → on_submit()
+2. Follow the call chain: on_submit() → make_gl_entries()
+3. Stop when you hit the actual GL Entry creation
+4. Count tokens (rough: 4 chars = 1 token)
+
+The question is "How does ERPNext create GL entries?"
+You need: trigger → creation → storage. Nothing more.
+
+Less is more. The team with smallest complete answer wins the bonus.
+```
+
+### Day 5: Bounded Context Hints
+
+```
+💡 Day 5 Tip: Bounded Contexts (Game 4)
+
+Three candidates in accounts module:
+
+1. **GL Posting** — general_ledger.py + gl_entry/
+   Interface: make_gl_entries()
+
+2. **Account Master** — doctype/account/
+   Interface: get_account(), get_balance_on()
+
+3. **Payment Ledger** — payment_ledger_entry/
+   Interface: make_payment_ledger_entry()
+
+Your job: Prove these are separate contexts with clear boundaries.
+Look for: What does each import? What imports each?
 ```
 
 ---
 
-## 📊 Progress Updates
-
-### Mid-Week Update Template
+## 📊 Progress Update Template
 
 ```
-📊 GAME PROGRESS UPDATE
+📊 GAME PROGRESS — Day [X]
 
-**Leaderboard (as of [DATE]):**
+**Leaderboard:**
 
-| Rank | Team | Points | Games Completed |
-|------|------|--------|-----------------|
-| 🥇 | [Team] | [X] pts | Game 1 ✓, Game 2 (3/7), Game 3 (Stage 2) |
-| 🥈 | [Team] | [X] pts | Game 1 (partial), Game 2 ✓, Game 3 (Stage 1) |
-| 🥉 | [Team] | [X] pts | Starting strong! |
+| Team | G1 | G2 | G3 | G4 | G5 | G6 | Total |
+|------|----|----|----|----|----|----|-------|
+| Alpha | 80 | - | 30 | - | - | - | 110 |
+| Beta | 100 | 50 | - | - | - | - | 150 |
+| Gamma | 60 | - | - | 40 | - | - | 100 |
 
 **Highlights:**
-- [Team] found a sneaky bug in Game 2! +30 points
-- [Team] cracked Stage 3 of the Strangler's Trail!
-- First hint request of the day: [question]
+- Team Beta completed Game 1 with 10 valid rules! 🎉
+- Team Alpha's AST script runs but misses some methods
+- Great discussion in Issue #43 about boundary detection
 
-Keep hunting! 🔍🐛🌳
-```
+**Tips:**
+- Game 1 solved example is your friend
+- Quality > Speed (except for bonuses)
 
-### Game Winner Announcement
-
-```
-🏆 GAME [X] WINNER!
-
-Congratulations to **[TEAM NAME]** for completing [Game Name] first!
-
-Their achievement:
-• [Specific accomplishment]
-• [Points earned]
-• [Time taken]
-
-Special recognition:
-• [Any notable strategy or discovery]
-
-The other teams can still earn full points — just not the first-place bonus. Keep going!
+Keep going! 🚀
 ```
 
 ---
 
-## 🎉 Final Ceremony
+## 🏆 Game Winner Announcement
+
+```
+🏆 GAME [X] WINNER: Team [NAME]!
+
+[Team] completed [Game] with [score] points!
+
+**What they did well:**
+- [Specific achievement]
+- [Quality of submission]
+- [Creative approach if any]
+
+**Their submission is now the benchmark.**
+Other teams: You can still earn full points, just not the first-place bonus.
+
+Direct link to their submission: [link]
+```
+
+---
+
+## 🎉 Final Results Ceremony
 
 ```
 🏆 CODE INTELLIGENCE GAMES — FINAL RESULTS
 
-After [X] days of hunting, debugging, and trail-following...
+After [X] days of hunting rules, mapping dependencies, and crafting contexts...
 
 **FINAL STANDINGS:**
 
-🥇 **1st Place: [TEAM NAME]** — [TOTAL] points
-   • Symbol Hunter: [X] pts
-   • Bug Hunt: [X] pts
-   • Strangler's Trail: [X] pts
+🥇 **1st Place: Team [NAME]** — [XXX] points
+   - G1: [X] | G2: [X] | G3: [X] | G4: [X] | G5: [X] | G6: [X]
+   - Bonuses: [X]
 
-🥈 **2nd Place: [TEAM NAME]** — [TOTAL] points
-   • [breakdown]
+🥈 **2nd Place: Team [NAME]** — [XXX] points
 
-🥉 **3rd Place: [TEAM NAME]** — [TOTAL] points
-   • [breakdown]
+🥉 **3rd Place: Team [NAME]** — [XXX] points
 
-**Special Awards:**
-• 🔍 **Best Symbol Hunter**: [Name] — found [X] patterns
-• 🐛 **Bug Squasher**: [Name] — found the hardest bug (Race Condition)
-• 🌳 **Trail Master**: [Name] — best journey log
+---
 
-**The Wisdom Revealed:**
-"WRAPS AROUND THE OLD TREE WHILE GROWING ITS OWN STRUCTURE BESIDE IT"
+**SPECIAL AWARDS:**
 
-This is how we modernize legacy systems. Not by cutting down the old tree, but by growing something new alongside it until it can stand on its own.
+🔍 **Best Rule Hunter:** [Name]
+   Found the most obscure but valid business rule
 
-Thank you all for playing! These skills — code exploration, bug hunting, pattern recognition — are exactly what you'll use when building the Code Intelligence Platform.
+🌳 **Best AST Script:** [Name]
+   Cleanest, most reusable code
 
-🎓 Certificates and prizes will be distributed in Friday's sync.
+🎯 **Most Efficient Context:** [Name]
+   Answered the question in fewest tokens
+
+📚 **Best Documentation:** [Name]
+   Clearest, most helpful submission
+
+---
+
+**WHAT YOU LEARNED:**
+
+| Game | Skill | Your Tool Will |
+|------|-------|----------------|
+| Business Rule Hunter | Finding validation logic | Extract rules automatically |
+| Dependency Mapper | Understanding boundaries | Map module relationships |
+| AST Explorer | Parsing code structure | Index symbols and types |
+| Bounded Context Detective | DDD analysis | Identify migration boundaries |
+| Parity Spec Writer | Behavior documentation | Generate migration specs |
+| Context Crafter | RAG selection | Provide focused AI context |
+
+**These are the exact skills needed to build your Code Intelligence Platform.**
+
+You did them manually. Now automate them.
+
+🎓 Certificates will be distributed in Friday's sync.
 ```
 
 ---
 
-## 🆘 Troubleshooting Posts
-
-### If Teams Are Stuck
+## 🆘 If Teams Are Stuck
 
 ```
-🆘 STUCK? Here's Help!
+🆘 Stuck? Here's Help.
 
-Noticed some teams haven't made progress in 24 hours. Here's a lifeline:
+**Haven't submitted anything yet?**
+1. Start with Game 1 — it's the most straightforward
+2. Read the solved example COMPLETELY
+3. Clone ERPNext and run: grep -rn "frappe.throw" erpnext/accounts
 
-**Symbol Hunter Stuck?**
-Try this command in the ERPNext repo:
-grep -r "frappe.throw" --include="*.py" erpnext/accounts/ | grep -i "balance"
+**Stuck on AST (Game 3)?**
+The starter code is in the README. It runs. Start there.
+Just add: if isinstance(node, ast.ClassDef): print(node.name)
 
-**Bug Hunt Stuck?**
-The 2 Easy bugs are in:
-• Function naming convention
-• Missing defensive check
+**Stuck on Bounded Context (Game 4)?**
+Start by listing what files are in accounts/doctype/
+Group them by "responsibility" — what business job does each do?
 
-Read the FIRST function carefully!
-
-**Strangler's Trail Stuck?**
-Stage 1: The file starts with "m" and ends with ".go"
-It's in the ledger/ directory.
-
-Need more help? DM me for a hint (costs 10 points).
+**Need more help?**
+- Free hint: Ask in #General
+- Guided hint (-10 pts): DM mentor
+- We WANT you to succeed. Ask for help!
 ```
-
-### Technical Issues
-
-```
-⚠️ TECHNICAL ISSUE RESOLVED
-
-[Describe issue]
-
-**Fix:** [What was done]
-
-**If you were affected:**
-• [Instructions to continue]
-• Any lost progress will be restored
-
-Sorry for the inconvenience! Games continue as normal.
-```
-
----
-
-## 📝 Notes for Game Master
-
-1. **Before posting Stage 5**, verify teams have reached Stage 4 by checking:
-   - PR comment activity
-   - Issue activity
-   - Any questions about "documentation" or "INTERN_GUIDE"
-
-2. **Track submissions** in a spreadsheet with timestamps
-
-3. **Watch for cheating signals:**
-   - Teams submitting identical answers at same time
-   - Answers appearing faster than humanly possible
-   - Direct copy of answer key formatting
-
-4. **Adjust difficulty** if needed:
-   - Too hard: Release more hints, extend deadline
-   - Too easy: Add bonus challenges
-
-5. **Celebrate effort**, not just winning — even partial completion shows learning
