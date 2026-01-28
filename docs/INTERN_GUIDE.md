@@ -4,6 +4,202 @@
 
 ---
 
+## 📍 Current Status: Week 3 of 4
+
+**You are in the Migrate Phase** — the most important part of the internship.
+
+> 📖 **Deep Dive**: For the complete internship framework, see the [AI Engineering Internship Vault](https://github.com/PearlThoughtsInternship/AI-Internship-Vault) which contains detailed guides on:
+> - [Week-by-Week Plan](../../../PearlThoughts-Org/HR/Internship/Internship-Obsidian-Vault/AI-Internship/04-Internship/02-Week-by-Week.md)
+> - [What You Build](../../../PearlThoughts-Org/HR/Internship/Internship-Obsidian-Vault/AI-Internship/04-Internship/03-What-You-Build.md)
+> - [Development Workflow](../../../PearlThoughts-Org/HR/Internship/Internship-Obsidian-Vault/AI-Internship/04-Internship/05-Development-Workflow.md)
+
+---
+
+## ⏰ Internship Timeline
+
+| Week | Phase | Focus | Deliverable |
+|------|-------|-------|-------------|
+| Week 1 | **Research** | Environment setup, understand ERPNext, read docs | Working local setup |
+| Week 2 | **Build** | Implement indexing, exercises, start building tool | First code contributions |
+| **Week 3** | **Migrate** ← YOU ARE HERE | Test on real codebase, PRs, validate parity | Working features |
+| Week 4 | **Verify & Document** | Measure effectiveness, document learnings | Final demo + evidence |
+
+### Extension Criteria
+
+The internship may be **extended based on your involvement**:
+
+| Factor | What We Look For |
+|--------|------------------|
+| **Active Participation** | Regular commits, PR reviews, asking questions |
+| **Quality Work** | Tests pass, code follows patterns, thoughtful solutions |
+| **Communication** | Responsive in Teams/GitHub, attends sync meetings |
+| **Initiative** | Proposes improvements, helps other interns |
+| **Learning Velocity** | Shows growth, applies feedback quickly |
+
+**If extending**: Focus shifts to deeper features, leading reviews, mentoring newer interns.
+
+---
+
+## 🗣️ Communication Protocols
+
+### Primary Channels
+
+| Channel | Use For | Response Time |
+|---------|---------|---------------|
+| **GitHub Issues** | Technical questions, code discussions | Within 24 hours |
+| **GitHub PR Reviews** | Code feedback, approvals | Within 24 hours |
+| **Teams (General)** | Announcements, general discussion | Check daily |
+| **Teams (Support)** | Help requests, blockers | Same day if urgent |
+| **Discord** | Casual discussion, peer help | Best effort |
+
+### Communication Expectations
+
+**Research First, Ask Second** (The "Rainforest Test"):
+1. Search existing docs/code for 10 minutes
+2. Try to solve it yourself
+3. If still stuck, ask with context:
+   - What you're trying to do
+   - What you've tried
+   - Specific error/blocker
+
+**Good Question Example**:
+> "I'm implementing `ValidateBalance()` in exercise 2. Running `go test` gives `expected true, got false` on line 45. I checked the mock data and 'Sales - ACME' is present. What am I missing?"
+
+**Bad Question Example**:
+> "It doesn't work"
+
+### Weekly Sync
+
+- **When**: Friday demos with mentor
+- **Format**: Show what you built, discuss blockers, plan next week
+- **Preparation**: Update progress in your PR or issue comments
+
+---
+
+## 🎯 Active Participation Requirements
+
+### Minimum Expectations (Week 3)
+
+| Requirement | Frequency |
+|-------------|-----------|
+| Commit meaningful code | 3+ times per week |
+| Respond to PR comments | Within 24 hours |
+| Post progress update | Weekly in Teams or GitHub |
+| Attend weekly sync | Every Friday |
+| Review peer PRs (optional but encouraged) | 1-2 per week |
+
+### Signs of Strong Participation
+
+✅ Asks clarifying questions before implementing
+✅ Proposes solutions, not just reports problems
+✅ Helps other interns in chat
+✅ Commits small, focused PRs (10-50 lines, not 1000)
+✅ Responds to feedback positively and quickly
+
+### Signs of Weak Participation
+
+❌ Silent for days with no updates
+❌ Large "dump" PRs with many unrelated changes
+❌ Ignoring review comments
+❌ Not asking for help when stuck (suffer in silence)
+❌ Skipping weekly syncs without notice
+
+---
+
+## 🧠 The Core Insight: Bounded Context Strategy
+
+> *"I want to extract the Accounts module, but it depends on Stock, Selling, and other modules. Don't I need to migrate everything at once?"*
+>
+> **No.** This is the core insight from Sam Newman's *Monolith to Microservices* and Michael Feathers' *Working Effectively with Legacy Code*.
+
+**Read the [main README](../README.md#but-the-accounts-module-has-dependencies) for the full diagram.**
+
+### The Key Pattern: Interface-Based Isolation
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  HOW TO EXTRACT A MODULE WITH DEPENDENCIES                                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  PROBLEM: GL Entry Engine needs Account data, Company settings, Budget...   │
+│                                                                              │
+│  SOLUTION: Define INTERFACES at the boundary                                │
+│                                                                              │
+│     type AccountLookup interface {                                          │
+│         GetAccount(name string) (*Account, error)                           │
+│         IsDisabled(name string) (bool, error)                               │
+│     }                                                                        │
+│                                                                              │
+│  Now the GL Entry Engine:                                                   │
+│  • Works with ANY implementation (mock, real DB, API)                       │
+│  • Can be tested in isolation (milliseconds, not minutes)                   │
+│  • Can be migrated incrementally (Strangler Fig Pattern)                    │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Why This Matters for Your Work
+
+| Book | Author | Pattern You'll Learn |
+|------|--------|---------------------|
+| **Monolith to Microservices** | Sam Newman | Strangler Fig, Branch by Abstraction |
+| **Working Effectively with Legacy Code** | Michael Feathers | Seams, Characterization Tests |
+| **Domain-Driven Design** | Eric Evans | Bounded Contexts, Anti-Corruption Layer |
+| **Clean Architecture** | Robert C. Martin | Ports & Adapters, Dependency Inversion |
+
+**Each exercise teaches you one of these patterns.**
+
+---
+
+## 🎯 The Big Picture: Two Parallel Goals
+
+You're learning **two things simultaneously**:
+
+### Goal 1: Legacy Modernization Architecture
+
+The exercises teach you the **patterns** that make incremental migration possible:
+- **Interface isolation** (Exercise 3: Repository Pattern)
+- **Test doubles** (Exercise 2, 3, 4: Mocks, Stubs, Fakes)
+- **Parity verification** (Exercise 4: Prove Go = Python)
+
+### Goal 2: Code Intelligence for AI Assistants
+
+Your Code Intelligence Platform will **extract** and **explain** these patterns:
+- **Entity extraction** (Exercise 1: GLEntry struct → your tool parses these)
+- **Business rule identification** (Exercise 2: Validation → your tool finds these)
+- **Dependency mapping** (Exercise 3: Interfaces → your tool traces these)
+- **Parity metrics** (Exercise 4: Your tool's success measure)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  THE CONNECTION                                                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  You can't build tools that extract what you don't understand.              │
+│                                                                              │
+│  By DOING the modernization (exercises), you learn:                         │
+│  • What patterns exist in legacy code                                       │
+│  • What makes code extractable vs entangled                                 │
+│  • What AI assistants need to generate correct code                         │
+│                                                                              │
+│  Then your Code Intelligence tool can:                                      │
+│  • Identify these patterns automatically                                    │
+│  • Provide focused context to AI assistants                                 │
+│  • Enable accurate code generation                                          │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### How This Repository Fits In
+
+| Repository | Purpose | Your Role |
+|------------|---------|-----------|
+| **erpnext-go** (this repo) | Demonstrates bounded context extraction | Learn the patterns |
+| **Your Tool** (you build) | Code Intelligence Platform | Extract & explain patterns |
+| **ERPNext** (Python source) | Legacy codebase to analyze | Your tool's input |
+
+---
+
 ## Welcome!
 
 This guide is designed for interns who want to contribute to the ERPNext modernization project. You don't need to understand everything—just follow the steps, and you'll learn as you go.
@@ -22,7 +218,7 @@ flowchart LR
         gfi["🎯 Good First Issue"]
     end
 
-    subgraph week3["Week 3+"]
+    subgraph week3["Week 3 ⭐"]
         pr["🚀 First PR"]
         review["👀 Code Review"]
         merge["✅ Merged!"]
@@ -89,6 +285,19 @@ graph TD
     style A fill:#4CAF50,color:#fff
     style F fill:#2196F3,color:#fff
 ```
+
+### How Each Exercise Connects to Both Goals
+
+| Exercise | Architectural Pattern (Goal 1) | Code Intelligence (Goal 2) |
+|----------|-------------------------------|---------------------------|
+| 🟢 **1. GLEntry Struct** | **Domain Modeling** — Understand the core entity | Your AST parser must extract entities like this |
+| 🟡 **2. Validation** | **Characterization Test** — Capture existing behavior | Your tool finds business rules in `frappe.throw()` patterns |
+| 🟡 **3. Repository** | **Ports & Adapters** — Interface-based isolation | Your tool uses same pattern for pluggable vector storage |
+| 🔴 **4. Integration Test** | **Parity Verification** — Prove Go = Python | **This IS your tool's success metric** |
+
+> 📚 **Key Reference**: The [main README](../README.md) has the full architectural diagrams. Read "But The Accounts Module Has Dependencies!" section before starting exercises.
+
+> 💡 **The Connection**: You can't build tools that extract what you don't understand. By DOING the modernization, you learn what patterns exist in legacy code — then your Code Intelligence tool can identify them automatically.
 
 ### Exercise Difficulty Levels
 
@@ -278,28 +487,31 @@ Before submitting, verify:
 flowchart TD
     stuck["😕 I'm stuck!"]
 
-    stuck --> doc["1. Check documentation"]
+    stuck --> doc["1. Check documentation (10 min)"]
     doc --> found["Found answer?"]
     found -->|Yes| continue["✅ Continue"]
     found -->|No| search["2. Search existing code"]
 
     search --> pattern["Found similar pattern?"]
     pattern -->|Yes| adapt["Adapt to your case"]
-    pattern -->|No| ask["3. Ask for help"]
+    pattern -->|No| ask["3. Ask for help (with context!)"]
 
-    ask --> slack["Post in #interns channel"]
-    slack --> mentor["Mentor responds"]
-    mentor --> pair["4. Pair programming session"]
+    ask --> github["GitHub Issue/PR comment"]
+    github --> teams["Or Teams Support channel"]
+    teams --> mentor["Mentor responds within 24h"]
 ```
 
-### Help Channels
+### Help Channels (Updated)
 
-| Channel | When to Use |
-|---------|-------------|
-| **GitHub Issue Comments** | Questions about specific issues |
-| **Slack #interns** | General questions, daily standup |
-| **Pair Programming** | When stuck for 30+ minutes |
-| **Weekly Sync** | Progress updates, blockers |
+| Channel | When to Use | Response Time |
+|---------|-------------|---------------|
+| **GitHub Issue Comments** | Technical questions about code | Within 24 hours |
+| **Teams General** | Announcements, non-urgent discussion | Check daily |
+| **Teams Support** | Blockers, urgent help requests | Same day |
+| **Discord** | Peer help, casual questions | Best effort |
+| **Weekly Sync (Friday)** | Progress updates, blockers | Synchronous |
+
+> ⚠️ **Note**: Teams chat permissions are being fixed by HR. If you can't send messages, use **GitHub Issues** or **Discord** as alternatives.
 
 ### Asking Good Questions
 
@@ -467,3 +679,39 @@ Contributors are recognized in:
 3. **LinkedIn recommendation** - For significant contributions
 
 Keep building, keep learning! 🚀
+
+---
+
+## 📚 Cross-References (AI Engineering Internship)
+
+This repository is part of the **AI Engineering Internship Program**. For comprehensive guides and deeper context, see:
+
+### Internship Framework (Obsidian Vault)
+
+| Document | What You'll Learn |
+|----------|-------------------|
+| [Before You Begin](https://github.com/PearlThoughtsInternship/AI-Internship-Vault/blob/main/04-Internship/01-Before-You-Begin.md) | Expectations, the "Rainforest Test" |
+| [Week-by-Week Plan](https://github.com/PearlThoughtsInternship/AI-Internship-Vault/blob/main/04-Internship/02-Week-by-Week.md) | Detailed weekly objectives and deliverables |
+| [What You Build](https://github.com/PearlThoughtsInternship/AI-Internship-Vault/blob/main/04-Internship/03-What-You-Build.md) | Tool forms, language choices, AI infrastructure |
+| [Your Role](https://github.com/PearlThoughtsInternship/AI-Internship-Vault/blob/main/04-Internship/04-Your-Role.md) | How you fit in Team Topologies |
+| [Development Workflow](https://github.com/PearlThoughtsInternship/AI-Internship-Vault/blob/main/04-Internship/05-Development-Workflow.md) | End-to-end workflow with evidence collection |
+
+### Technical Deep Dives
+
+| Document | What You'll Learn |
+|----------|-------------------|
+| [Code Intelligence Overview](https://github.com/PearlThoughtsInternship/AI-Internship-Vault/blob/main/02-Engineering/Code-Intelligence/01-What-Is-Code-Intelligence.md) | Why code intelligence matters |
+| [DDD Patterns](https://github.com/PearlThoughtsInternship/AI-Internship-Vault/blob/main/02-Engineering/Domain-Knowledge/01-Why-DDD-Matters.md) | Domain-driven design for migrations |
+| [Quality Metrics](https://github.com/PearlThoughtsInternship/AI-Internship-Vault/blob/main/03-AI-Platform/04-Quality-Metrics.md) | How to measure your tool's effectiveness |
+| [Sales Invoice Case Study](https://github.com/PearlThoughtsInternship/AI-Internship-Vault/blob/main/05-Worked-Examples/01-Sales-Invoice-Case-Study.md) | Detailed example of migration approach |
+
+### Contributing
+
+| Document | What You'll Learn |
+|----------|-------------------|
+| [How to Contribute](https://github.com/PearlThoughtsInternship/AI-Internship-Vault/blob/main/05-Contributions/01-How-To-Contribute.md) | Code, experiments, documentation contributions |
+| [Cohort Reviews](https://github.com/PearlThoughtsInternship/AI-Internship-Vault/tree/main/05-Contributions/Reviews) | Current cohort progress and feedback |
+
+---
+
+*Last Updated: 2026-01-28*

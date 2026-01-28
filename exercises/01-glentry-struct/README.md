@@ -6,6 +6,48 @@
 
 ---
 
+## 🔗 How This Connects to the Big Picture
+
+> *You're learning Domain-Driven Design — how to model business concepts in code.*
+
+### Architectural Connection (Goal 1: Legacy Modernization)
+
+From Eric Evans' **Domain-Driven Design**: A **Bounded Context** has a clear domain model. `GLEntry` is the core entity of the Accounts bounded context.
+
+When you understand the GLEntry struct, you understand:
+- What data flows through the accounting system
+- What fields are required vs optional
+- How ERPNext models financial transactions
+
+**See the [main README](../../README.md#but-the-accounts-module-has-dependencies)** for how this fits into the Bounded Context Strategy.
+
+### Code Intelligence Connection (Goal 2: AI Assistants)
+
+The **Code Intelligence Platform** you're building needs to understand enterprise domain concepts like `GLEntry`. Here's why this exercise matters:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  WHAT YOUR TOOL WILL DO (eventually)                                     │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  Developer asks: "How does ERPNext create GL entries?"                  │
+│                                                                          │
+│  Your Tool's Job:                                                        │
+│  1. FIND the relevant Python code (gl_entry.py, accounts_controller.py) │
+│  2. EXTRACT the domain model (GLEntry fields, relationships)            │
+│  3. PROVIDE context to AI assistant                                      │
+│                                                                          │
+│  AI Assistant outputs:                                                   │
+│  "GLEntry has 20+ fields. Key ones are Account, Debit, Credit,          │
+│   VoucherType. The balance rule is enforced in make_gl_entries()..."    │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**By understanding GLEntry yourself**, you'll build better tools that extract and explain this knowledge to AI assistants.
+
+---
+
 ## Background
 
 In accounting, a **General Ledger Entry (GL Entry)** is the fundamental record of a financial transaction. Every time money moves in ERPNext, GL entries are created.
@@ -98,6 +140,28 @@ But try to figure it out yourself first!
 - Go struct syntax
 - The relationship between Python and Go data models
 - Running Go tests
+
+---
+
+## 🧠 Code Intelligence Insight
+
+When your tool indexes ERPNext, it will extract struct definitions like this:
+
+```python
+# ERPNext Python (what your tool will parse)
+class GLEntry(Document):
+    account = ...
+    debit = ...
+    credit = ...
+    posting_date = ...
+```
+
+Your tool's **AST parser** will need to:
+1. Identify this as a **domain entity** (not just any class)
+2. Extract the **field names and types**
+3. Understand the **relationships** (GLEntry → Account)
+
+**This exercise gives you the domain knowledge** to build that parser correctly. You'll know what fields matter, what they mean, and how they relate.
 
 ---
 

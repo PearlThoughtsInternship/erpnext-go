@@ -6,6 +6,54 @@
 
 ---
 
+## 🔗 How This Connects to the Big Picture
+
+> *You're learning Characterization Testing — capturing existing behavior before changing code.*
+
+### Architectural Connection (Goal 1: Legacy Modernization)
+
+From Michael Feathers' **Working Effectively with Legacy Code**: Before you can change legacy code, you must **characterize** its current behavior. This validation logic (`debit == credit`) is a **business rule** that must work identically in Python and Go.
+
+By implementing this validation yourself, you understand:
+- What the golden rule of accounting actually means in code
+- How ERPNext enforces business rules (the `frappe.throw()` pattern)
+- What a **Characterization Test** captures
+
+**See the [main README](../../README.md#how-we-handle-dependencies)** for how test doubles enable isolated testing.
+
+### Code Intelligence Connection (Goal 2: AI Assistants)
+
+The **#1 thing** enterprises need from legacy modernization is: **"What business rules are hidden in this code?"**
+
+This validation logic is a **business rule**. It's not documented anywhere — it's embedded in Python code. Your Code Intelligence Platform must:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  THE BUSINESS RULE EXTRACTION PROBLEM                                    │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  ERPNext has THOUSANDS of business rules like this:                     │
+│                                                                          │
+│  • "Debits must equal Credits" (this exercise)                          │
+│  • "Can't submit invoice if credit limit exceeded"                      │
+│  • "Stock can't go negative without allow_negative_stock setting"       │
+│  • "Journal Entry must have at least 2 lines"                           │
+│                                                                          │
+│  Your Tool's Job:                                                        │
+│  1. IDENTIFY functions that validate/check/raise errors                 │
+│  2. EXTRACT the conditions (if abs(total_debit - total_credit) > 0.001) │
+│  3. SUMMARIZE as human-readable rules for AI assistants                 │
+│                                                                          │
+│  "The system enforces that total debits equals total credits,           │
+│   with a tolerance of 0.001 for floating point errors."                 │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**By implementing this rule yourself**, you understand how business logic is structured in enterprise code.
+
+---
+
 ## Background
 
 The **golden rule of accounting**: Debits must equal Credits.
@@ -130,3 +178,32 @@ def check_if_in_list(gl_map):
 ```
 
 Your Go implementation should produce the same results!
+
+---
+
+## 🧠 Code Intelligence Insight
+
+This Python code is **exactly what your tool will analyze**. Notice the patterns:
+
+| Pattern | What Your Tool Should Extract |
+|---------|-------------------------------|
+| `sum(flt(d.debit) for d in gl_map)` | Aggregation over a collection |
+| `abs(total_debit - total_credit) > 0.001` | Validation rule with tolerance |
+| `frappe.throw("...")` | Error message = business rule description |
+
+**Your indexer should recognize:**
+1. `frappe.throw()` = validation failure point
+2. The condition before `throw()` = the business rule
+3. The message = human-readable description
+
+When you build your Code Intelligence tool, you'll write code that:
+```python
+# Your future tool (pseudocode)
+for function in parsed_ast:
+    if contains_call(function, "frappe.throw"):
+        condition = extract_preceding_if_condition(function)
+        message = extract_throw_message(function)
+        rules.append(BusinessRule(condition, message))
+```
+
+**This exercise teaches you what those rules look like** so you can build extractors that find them.
