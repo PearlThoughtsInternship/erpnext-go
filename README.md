@@ -205,6 +205,7 @@ graph LR
     docs --> design["DESIGN.md"]
     docs --> impl["IMPLEMENTATION.md"]
     docs --> ai["AI_ENGINEERING.md"]
+    docs --> verify["VERIFICATION.md"]
     docs --> parity["PARITY_VERIFICATION.md"]
 
     style mop fill:#d4edda,stroke:#155724
@@ -222,7 +223,8 @@ graph LR
 | **[Design Decisions](docs/DESIGN.md)** | Why interfaces? Why typed errors? Trade-offs explained |
 | **[Implementation Guide](docs/IMPLEMENTATION.md)** | Step-by-step migration process |
 | **[AI Engineering](docs/AI_ENGINEERING.md)** | How AI accelerates legacy modernization |
-| **[Parity Verification](docs/PARITY_VERIFICATION.md)** | Evidence that Go matches Python behavior |
+| **[Verification Guide](docs/VERIFICATION.md)** | Modernization verification techniques, test methods, sample data |
+| **[Parity Report](docs/PARITY_VERIFICATION.md)** | Evidence that Go matches Python behavior |
 
 ---
 
@@ -246,6 +248,75 @@ graph LR
 | "Migration takes forever" | Extract one bounded context at a time; value delivered incrementally |
 | "How do we know it's correct?" | Shadow mode compares Python vs Go outputs before switching |
 | "What if we need to rollback?" | Feature flags control routing; legacy remains operational |
+
+---
+
+## Verification & Testing
+
+### Quick Verification Commands
+
+```bash
+# Run all tests
+go test -v ./...
+
+# Run with coverage report
+go test ./... -cover
+
+# Run parity verification tests only
+go test ./ledger/... -v -run "Realistic|MultiCurrency|FullGL"
+
+# Run specific package tests
+go test -v ./ledger/...
+go test -v ./taxcalc/...
+go test -v ./modeofpayment/...
+```
+
+### Test Results Summary
+
+```mermaid
+pie showData
+    title Test Distribution (68 Total)
+    "Mode of Payment" : 19
+    "Tax Calculator" : 24
+    "GL Entry Engine" : 25
+```
+
+### Verification Approach
+
+```mermaid
+flowchart LR
+    subgraph capture["1️⃣ Capture"]
+        py["🐍 Python<br/>Behavior"]
+    end
+
+    subgraph implement["2️⃣ Implement"]
+        go["🔷 Go<br/>Logic"]
+    end
+
+    subgraph verify["3️⃣ Verify"]
+        compare["📊 Compare<br/>Outputs"]
+    end
+
+    subgraph confirm["4️⃣ Confirm"]
+        parity["✅ Parity<br/>Report"]
+    end
+
+    capture --> implement --> verify --> confirm
+
+    style capture fill:#306998,color:#fff
+    style implement fill:#00ADD8,color:#fff
+    style verify fill:#fff3cd,stroke:#856404
+    style confirm fill:#d4edda,stroke:#155724
+```
+
+| Verification Type | Description | Status |
+|-------------------|-------------|--------|
+| **Parity Testing** | Same input → Same output (Python vs Go) | ✅ 5 scenarios |
+| **Functional Testing** | Business rules execute correctly | ✅ 41 cases |
+| **Integration Testing** | Components work together | ✅ 6 realistic flows |
+| **Edge Case Testing** | Boundary conditions handled | ✅ 12 edge cases |
+
+**📖 Full Details:** [Verification Documentation](docs/VERIFICATION.md) | [Parity Report](docs/PARITY_VERIFICATION.md)
 
 ---
 
