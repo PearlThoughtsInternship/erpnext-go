@@ -43,47 +43,52 @@ go test -v ./...
 
 ### The Bounded Context Strategy
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                     ERPNext Monolith (Python)                       │
-│  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐         │
-│  │ Accounts │◄──│  Stock   │◄──│ Selling  │◄──│    HR    │         │
-│  │          │──►│          │──►│          │──►│          │         │
-│  └──────────┘   └──────────┘   └──────────┘   └──────────┘         │
-│       ▲                                                             │
-│       │ Dependencies flow everywhere                                │
-└───────┼─────────────────────────────────────────────────────────────┘
-        │
-        │  Extract with INTERFACES at the boundary
-        ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                      Go Bounded Context                             │
-│                                                                     │
-│   ┌──────────────────────────────────────────────────────────┐     │
-│   │                    Ledger Package                         │     │
-│   │                                                           │     │
-│   │   ┌─────────────────┐     ┌─────────────────┐            │     │
-│   │   │  GLEntry Model  │     │  MakeGLEntries  │            │     │
-│   │   │  (pure Go)      │     │  (pure logic)   │            │     │
-│   │   └─────────────────┘     └─────────────────┘            │     │
-│   │              │                     │                      │     │
-│   │              ▼                     ▼                      │     │
-│   │   ┌─────────────────────────────────────────────┐        │     │
-│   │   │         PORT INTERFACES                      │        │     │
-│   │   │  AccountLookup    CompanySettings           │        │     │
-│   │   │  GLEntryStore     BudgetValidator           │        │     │
-│   │   └─────────────────────────────────────────────┘        │     │
-│   └──────────────────────────────────────────────────────────┘     │
-│                              │                                      │
-│                              ▼                                      │
-│   ┌──────────────────────────────────────────────────────────┐     │
-│   │              ADAPTERS (Swappable)                         │     │
-│   │                                                           │     │
-│   │   🧪 Test: MockAccountLookup    🏭 Prod: PostgresAdapter │     │
-│   │   🧪 Test: MockGLStore          🏭 Prod: MariaDBAdapter  │     │
-│   └──────────────────────────────────────────────────────────┘     │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph monolith["🐍 ERPNext Monolith (Python)"]
+        direction LR
+        accounts["📊 Accounts"]
+        stock["📦 Stock"]
+        selling["💰 Selling"]
+        hr["👥 HR"]
+
+        accounts <--> stock
+        stock <--> selling
+        selling <--> hr
+    end
+
+    monolith -->|"Extract with<br/>INTERFACES<br/>at boundary"| gocontext
+
+    subgraph gocontext["🔷 Go Bounded Context"]
+        subgraph ledger["📦 Ledger Package"]
+            glmodel["GLEntry Model<br/>(pure Go)"]
+            glengine["MakeGLEntries<br/>(pure logic)"]
+
+            glmodel --> ports
+            glengine --> ports
+
+            subgraph ports["🔌 PORT INTERFACES"]
+                accountlookup["AccountLookup"]
+                companysettings["CompanySettings"]
+                glstore["GLEntryStore"]
+                budgetval["BudgetValidator"]
+            end
+        end
+
+        ports --> adapters
+
+        subgraph adapters["🔄 ADAPTERS (Swappable)"]
+            direction LR
+            testadapt["🧪 Test:<br/>MockAccountLookup<br/>MockGLStore"]
+            prodadapt["🏭 Prod:<br/>PostgresAdapter<br/>MariaDBAdapter"]
+        end
+    end
+
+    style monolith fill:#fff3cd,stroke:#856404
+    style gocontext fill:#d1ecf1,stroke:#0c5460
+    style ledger fill:#d4edda,stroke:#155724
+    style ports fill:#cce5ff,stroke:#004085
+    style adapters fill:#e2e3e5,stroke:#383d41
 ```
 
 ### How We Handle Dependencies
@@ -99,12 +104,26 @@ go test -v ./...
 
 From *xUnit Test Patterns* by Gerard Meszaros:
 
-| Double | Purpose | We Use It For |
-|--------|---------|---------------|
-| **Mock** | Verify interactions | `GLEntryStore.Save()` was called correctly |
-| **Stub** | Return canned answers | `AccountLookup.IsDisabled()` returns `false` |
-| **Fake** | Working implementation | In-memory store for integration tests |
-| **Spy** | Record calls for later | Verify GL entries posted in correct order |
+```mermaid
+graph LR
+    subgraph doubles["Test Doubles"]
+        mock["🎭 Mock<br/>Verify interactions"]
+        stub["📋 Stub<br/>Return canned answers"]
+        fake["⚙️ Fake<br/>Working implementation"]
+        spy["🔍 Spy<br/>Record calls"]
+    end
+
+    mock -->|"GLEntryStore.Save()<br/>was called correctly"| usage1["Usage"]
+    stub -->|"AccountLookup.IsDisabled()<br/>returns false"| usage2["Usage"]
+    fake -->|"In-memory store<br/>for integration tests"| usage3["Usage"]
+    spy -->|"Verify GL entries<br/>posted in order"| usage4["Usage"]
+
+    style doubles fill:#f8f9fa,stroke:#dee2e6
+    style mock fill:#ffeaa7
+    style stub fill:#81ecec
+    style fake fill:#a29bfe
+    style spy fill:#fd79a8
+```
 
 ### Real Example: GL Entry Engine
 
@@ -141,53 +160,56 @@ func TestValidateDisabledAccounts(t *testing.T) {
 
 ### The Strangler Fig In Action
 
-```
-Phase 1: Shadow Mode
-┌──────────────────────────────────────────────────────────────┐
-│                        Request                                │
-│                           │                                   │
-│            ┌──────────────┴──────────────┐                   │
-│            ▼                              ▼                   │
-│     ┌──────────────┐              ┌──────────────┐           │
-│     │   ERPNext    │              │     Go       │           │
-│     │   (Python)   │              │   (Shadow)   │           │
-│     └──────┬───────┘              └──────┬───────┘           │
-│            │                              │                   │
-│            ▼                              ▼                   │
-│     ┌──────────────┐              ┌──────────────┐           │
-│     │   Response   │   Compare    │   Response   │           │
-│     │   (Primary)  │◄────────────►│   (Logged)   │           │
-│     └──────────────┘              └──────────────┘           │
-└──────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph phase1["Phase 1: Shadow Mode"]
+        req1["📨 Request"] --> router1["🔀 Router"]
+        router1 --> python1["🐍 ERPNext<br/>(Python)"]
+        router1 -.->|shadow| go1["🔷 Go<br/>(Shadow)"]
+        python1 --> resp1["✅ Response<br/>(Primary)"]
+        go1 -.-> compare["📊 Compare<br/>& Log"]
+        resp1 --> compare
+    end
 
-Phase 2: Traffic Switch
-┌──────────────────────────────────────────────────────────────┐
-│                        Request                                │
-│                           │                                   │
-│                           ▼                                   │
-│                    ┌──────────────┐                          │
-│                    │     Go       │ ◄── Primary now          │
-│                    │   (Primary)  │                          │
-│                    └──────────────┘                          │
-│                                                               │
-│     ERPNext (Python) still available for rollback            │
-└──────────────────────────────────────────────────────────────┘
+    subgraph phase2["Phase 2: Traffic Switch"]
+        req2["📨 Request"] --> router2["🔀 Router"]
+        router2 --> go2["🔷 Go<br/>(Primary)"]
+        go2 --> resp2["✅ Response"]
+        python2["🐍 ERPNext<br/>(Rollback Ready)"] -.->|"available"| router2
+    end
+
+    phase1 -->|"Confidence<br/>Built"| phase2
+
+    style phase1 fill:#fff3cd,stroke:#856404
+    style phase2 fill:#d4edda,stroke:#155724
+    style python1 fill:#306998,color:#fff
+    style python2 fill:#306998,color:#fff
+    style go1 fill:#00ADD8,color:#fff
+    style go2 fill:#00ADD8,color:#fff
 ```
 
 ---
 
 ## Project Structure
 
-```
-erpnext-go/
-├── modeofpayment/     # ✅ Iteration 1: Payment methods
-├── taxcalc/           # ✅ Iteration 2: Tax calculations
-├── ledger/            # 🔄 Iteration 3: GL Entry Engine
-└── docs/
-    ├── ARCHITECTURE.md      # System design + diagrams
-    ├── DESIGN.md            # Design decisions
-    ├── IMPLEMENTATION.md    # Step-by-step guide
-    └── AI_ENGINEERING.md    # AI-assisted modernization
+```mermaid
+graph LR
+    subgraph repo["📁 erpnext-go/"]
+        mop["📦 modeofpayment/<br/>✅ Iteration 1"]
+        tax["📦 taxcalc/<br/>✅ Iteration 2"]
+        ledger["📦 ledger/<br/>🔄 Iteration 3"]
+        docs["📚 docs/"]
+    end
+
+    docs --> arch["ARCHITECTURE.md"]
+    docs --> design["DESIGN.md"]
+    docs --> impl["IMPLEMENTATION.md"]
+    docs --> ai["AI_ENGINEERING.md"]
+    docs --> parity["PARITY_VERIFICATION.md"]
+
+    style mop fill:#d4edda,stroke:#155724
+    style tax fill:#d4edda,stroke:#155724
+    style ledger fill:#fff3cd,stroke:#856404
 ```
 
 ---
@@ -200,7 +222,7 @@ erpnext-go/
 | **[Design Decisions](docs/DESIGN.md)** | Why interfaces? Why typed errors? Trade-offs explained |
 | **[Implementation Guide](docs/IMPLEMENTATION.md)** | Step-by-step migration process |
 | **[AI Engineering](docs/AI_ENGINEERING.md)** | How AI accelerates legacy modernization |
-| **[Parity Report](../PARITY_REPORT.md)** | Field-by-field Python → Go comparison |
+| **[Parity Verification](docs/PARITY_VERIFICATION.md)** | Evidence that Go matches Python behavior |
 
 ---
 

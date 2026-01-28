@@ -1,4 +1,4 @@
-# 🎯 Design Decisions
+# Design Decisions
 
 > Design choices, trade-offs, and rationale for ERPNext to Go migration
 
@@ -35,7 +35,7 @@
 
 ## Key Decisions
 
-### 1. 🔌 Interface-Based Dependencies
+### 1. Interface-Based Dependencies
 
 **Decision:** All external dependencies accessed via interfaces defined in the domain layer.
 
@@ -43,6 +43,33 @@
 - ERPNext uses global functions (`frappe.get_value()`, `frappe.db.sql()`)
 - Global state makes unit testing impossible without full stack
 - We need to test business logic in isolation
+
+```mermaid
+flowchart LR
+    subgraph domain["💎 Domain Layer"]
+        logic["Business Logic"]
+        interface["Interface Definition"]
+    end
+
+    subgraph infra["🔧 Infrastructure"]
+        postgres["PostgresAccountLookup"]
+        mock["MockAccountLookup"]
+    end
+
+    logic --> interface
+    interface -.->|"implemented by"| postgres
+    interface -.->|"implemented by"| mock
+
+    subgraph test["🧪 Tests"]
+        unittest["Unit Tests"]
+    end
+
+    unittest --> mock
+
+    style domain fill:#fff3cd,stroke:#856404
+    style infra fill:#e2e3e5
+    style test fill:#d4edda
+```
 
 **Options Considered:**
 
@@ -52,23 +79,6 @@
 | B. Dependency injection via constructors | Testable, explicit | Verbose |
 | **C. Interface-based injection** ✅ | Testable, swappable | Slight indirection |
 
-**Decision:** Option C — Interfaces define contracts, implementations injected
-
-```go
-// Domain defines what it needs (port)
-type AccountLookup interface {
-    GetAccountCompany(accountName string) (string, error)
-}
-
-// Infrastructure provides it (adapter)
-type PostgresAccountLookup struct { db *sql.DB }
-func (p *PostgresAccountLookup) GetAccountCompany(name string) (string, error) { ... }
-
-// Tests use mocks
-type MockAccountLookup struct { accounts map[string]string }
-func (m *MockAccountLookup) GetAccountCompany(name string) (string, error) { ... }
-```
-
 **Consequences:**
 - ✅ Unit tests run in milliseconds (no DB)
 - ✅ Can swap PostgreSQL for SQLite in tests
@@ -77,7 +87,7 @@ func (m *MockAccountLookup) GetAccountCompany(name string) (string, error) { ...
 
 ---
 
-### 2. 🚨 Typed Sentinel Errors
+### 2. Typed Sentinel Errors
 
 **Decision:** Define error constants for programmatic error handling.
 
@@ -85,6 +95,28 @@ func (m *MockAccountLookup) GetAccountCompany(name string) (string, error) { ...
 - Python uses `frappe.throw(message)` with string matching
 - Callers can't reliably handle specific errors
 - Go's `errors.Is()` enables type-safe error checks
+
+```mermaid
+flowchart TB
+    subgraph python["🐍 Python (ERPNext)"]
+        throw["frappe.throw(message)"]
+        catch["try/except + string match"]
+    end
+
+    subgraph go["🔷 Go (Ours)"]
+        sentinel["var ErrDuplicateCompany = errors.New(...)"]
+        wrapper["ValidationError{Err, Details}"]
+        check["errors.Is(err, ErrDuplicateCompany)"]
+    end
+
+    throw -->|"migrates to"| sentinel
+    catch -->|"migrates to"| check
+    sentinel --> wrapper
+    wrapper --> check
+
+    style python fill:#306998,color:#fff
+    style go fill:#00ADD8,color:#fff
+```
 
 **Options Considered:**
 
@@ -94,29 +126,6 @@ func (m *MockAccountLookup) GetAccountCompany(name string) (string, error) { ...
 | B. Custom error types | Full control | Boilerplate |
 | **C. Sentinel errors + wrapper** ✅ | Type-safe, details included | Moderate complexity |
 
-**Decision:** Option C — Sentinel errors with `ValidationError` wrapper
-
-```go
-// Sentinel errors for type checking
-var (
-    ErrDuplicateCompany = errors.New("same company is entered more than once")
-    ErrAccountMismatch  = errors.New("account does not match with company")
-)
-
-// Wrapper for additional context
-type ValidationError struct {
-    Err     error  // Sentinel for errors.Is()
-    Details string // Human-readable context
-}
-
-func (e *ValidationError) Unwrap() error { return e.Err }
-
-// Usage
-if errors.Is(err, ErrDuplicateCompany) {
-    // Handle duplicate company specifically
-}
-```
-
 **Consequences:**
 - ✅ Callers can handle specific errors
 - ✅ Details preserved for logging/display
@@ -125,14 +134,32 @@ if errors.Is(err, ErrDuplicateCompany) {
 
 ---
 
-### 3. 📊 Table-Driven Tests
+### 3. Table-Driven Tests
 
 **Decision:** Use table-driven tests for comprehensive coverage.
 
-**Context:**
-- ERPNext has minimal test coverage for Mode of Payment
-- We need to prove parity with Python behavior
-- Adding test cases should be trivial
+```mermaid
+flowchart LR
+    subgraph table["Test Table"]
+        case1["Case 1: empty accounts"]
+        case2["Case 2: unique companies"]
+        case3["Case 3: duplicate companies"]
+        caseN["Case N: ..."]
+    end
+
+    subgraph runner["Test Runner"]
+        loop["for _, tt := range tests"]
+        subtest["t.Run(tt.name, ...)"]
+        assert["Assert result"]
+    end
+
+    table --> loop
+    loop --> subtest
+    subtest --> assert
+
+    style table fill:#cce5ff
+    style runner fill:#d4edda
+```
 
 **Options Considered:**
 
@@ -142,31 +169,6 @@ if errors.Is(err, ErrDuplicateCompany) {
 | B. BDD framework (Ginkgo) | Expressive | External dependency |
 | **C. Table-driven tests** ✅ | Go idiom, easy to extend | Slightly dense |
 
-**Decision:** Option C — Table-driven with subtests
-
-```go
-func TestValidateRepeatingCompanies(t *testing.T) {
-    tests := []struct {
-        name     string
-        accounts []ModeOfPaymentAccount
-        wantErr  error
-    }{
-        {"empty accounts - valid", []ModeOfPaymentAccount{}, nil},
-        {"duplicate - error", []ModeOfPaymentAccount{{Company: "A"}, {Company: "A"}}, ErrDuplicateCompany},
-    }
-
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            m := &ModeOfPayment{Accounts: tt.accounts}
-            err := m.ValidateRepeatingCompanies()
-            if !errors.Is(err, tt.wantErr) {
-                t.Errorf("got %v, want %v", err, tt.wantErr)
-            }
-        })
-    }
-}
-```
-
 **Consequences:**
 - ✅ Adding test cases is one line
 - ✅ Subtests run in parallel if needed
@@ -175,41 +177,38 @@ func TestValidateRepeatingCompanies(t *testing.T) {
 
 ---
 
-### 4. 📦 Domain Purity
+### 4. Domain Purity
 
 **Decision:** Domain structs contain no infrastructure code.
 
-**Context:**
-- Frappe's Document class mixes data, validation, persistence, and UI
-- This tight coupling prevents reuse and testing
-- We want business logic portable across contexts
+```mermaid
+flowchart TB
+    subgraph bad["❌ Active Record (Frappe)"]
+        doc["Document"]
+        doc --> data["Data Fields"]
+        doc --> validation["Validation"]
+        doc --> persistence["Save/Load/Delete"]
+        doc --> ui["UI Hooks"]
+    end
 
-**Options Considered:**
+    subgraph good["✅ Rich Domain Model (Go)"]
+        subgraph domain["Domain"]
+            entity["Entity"]
+            entity --> data2["Data Fields"]
+            entity --> rules["Business Rules"]
+        end
 
-| Option | Pros | Cons |
-|--------|------|------|
-| A. Active Record (like Frappe) | Familiar, less code | Untestable, coupled |
-| B. Anemic domain model | Simple structs | Logic scattered |
-| **C. Rich domain model** ✅ | Logic with data, no infra | More design effort |
+        subgraph infra2["Infrastructure"]
+            repo["Repository"]
+            repo --> persistence2["Save/Load/Delete"]
+        end
 
-**Decision:** Option C — Structs with validation methods, no DB code
+        entity -.-> repo
+    end
 
-```go
-// ✅ Domain struct - pure data and business rules
-type ModeOfPayment struct {
-    Name     string
-    Type     PaymentType
-    Enabled  bool
-    Accounts []ModeOfPaymentAccount
-}
-
-// ✅ Validation is a domain concern
-func (m *ModeOfPayment) Validate(lookup AccountLookup, checker POSChecker) error {
-    // Business rules only - no DB calls directly
-}
-
-// ❌ NO persistence in domain
-// func (m *ModeOfPayment) Save() error { ... }  // FORBIDDEN
+    style bad fill:#f8d7da,stroke:#721c24
+    style good fill:#d4edda,stroke:#155724
+    style domain fill:#fff3cd
 ```
 
 **Consequences:**
@@ -220,38 +219,29 @@ func (m *ModeOfPayment) Validate(lookup AccountLookup, checker POSChecker) error
 
 ---
 
-### 5. 🔄 Incremental Migration
+### 5. Incremental Migration
 
 **Decision:** Migrate one bounded context at a time with feature flags.
 
-**Context:**
-- Big-bang rewrites have high failure rate
-- Business needs continuity during migration
-- We need ability to rollback any change
-
-**Options Considered:**
-
-| Option | Pros | Cons |
-|--------|------|------|
-| A. Big bang rewrite | Clean slate | High risk, long timeline |
-| B. Branch by abstraction | Gradual | Complex branching |
-| **C. Strangler Fig** ✅ | Incremental, reversible | Dual maintenance |
-
-**Decision:** Option C — Strangler Fig with feature flags
-
-```
-Migration Timeline:
-═══════════════════════════════════════════════════════════════
-
-Week 1-2: Mode of Payment
-├── Extract to Go ────────────────────► Tests pass
-├── Deploy shadow mode ───────────────► Compare outputs
-├── Enable for 1% traffic ────────────► Monitor errors
-├── Enable for 100% traffic ──────────► Full cutover
-└── Remove Python code ───────────────► Clean up
-
-Week 3-4: Bank
-├── Extract to Go ...
+```mermaid
+gantt
+    title Strangler Fig Migration Timeline
+    dateFormat  YYYY-MM-DD
+    section Mode of Payment
+    Extract to Go       :done, mop1, 2026-01-01, 7d
+    Shadow Mode         :done, mop2, after mop1, 3d
+    1% Traffic          :done, mop3, after mop2, 3d
+    100% Traffic        :done, mop4, after mop3, 2d
+    section Tax Calculator
+    Extract to Go       :done, tax1, 2026-01-10, 10d
+    Shadow Mode         :done, tax2, after tax1, 3d
+    Rollout             :done, tax3, after tax2, 5d
+    section GL Engine
+    Extract to Go       :active, gl1, 2026-01-20, 14d
+    Shadow Mode         :gl2, after gl1, 5d
+    Rollout             :gl3, after gl2, 7d
+    section Account Master
+    Extract             :acc1, after gl3, 10d
 ```
 
 **Consequences:**
@@ -266,211 +256,196 @@ Week 3-4: Bank
 
 ### Patterns Used
 
-| Pattern | Where | Purpose |
-|---------|-------|---------|
-| **Repository** | `AccountLookup`, `POSChecker` | Abstract data access |
-| **Value Object** | `PaymentType` | Type-safe enums |
-| **Entity** | `ModeOfPayment` | Identity + behavior |
-| **Aggregate** | `ModeOfPayment` + `Accounts` | Transactional boundary |
-| **Specification** | `Validate()` methods | Encapsulate business rules |
-| **Anti-Corruption Layer** | Legacy bridge | Protect from ERPNext changes |
+```mermaid
+mindmap
+  root((DDD Patterns))
+    Tactical
+      Entity
+        ModeOfPayment
+        GLEntry
+      Value Object
+        PaymentType
+        PostingOptions
+      Aggregate
+        ModeOfPayment + Accounts
+      Repository
+        AccountLookup
+        GLEntryStore
+    Strategic
+      Bounded Context
+        Ledger Package
+        TaxCalc Package
+      Anti-Corruption Layer
+        Legacy Bridge
+      Context Map
+        Shared Kernel
+```
 
 ### Pattern Details
 
 #### Repository Pattern
 
-```go
-// Generic repository interface
-type Repository[T any] interface {
-    Create(ctx context.Context, entity *T) error
-    Get(ctx context.Context, id string) (*T, error)
-    Update(ctx context.Context, entity *T) error
-    Delete(ctx context.Context, id string) error
-    List(ctx context.Context, filters ...Filter) ([]*T, error)
-}
-
-// Specific implementation
-type ModeOfPaymentRepository interface {
-    Repository[ModeOfPayment]
-    FindByType(ctx context.Context, paymentType PaymentType) ([]*ModeOfPayment, error)
-}
-```
-
-#### Value Object Pattern
-
-```go
-// PaymentType is immutable and compared by value
-type PaymentType string
-
-const (
-    Cash    PaymentType = "Cash"
-    Bank    PaymentType = "Bank"
-    General PaymentType = "General"
-    Phone   PaymentType = "Phone"
-)
-
-// Validation at creation
-func ParsePaymentType(s string) (PaymentType, error) {
-    switch s {
-    case "Cash", "Bank", "General", "Phone":
-        return PaymentType(s), nil
-    default:
-        return "", fmt.Errorf("invalid payment type: %s", s)
+```mermaid
+classDiagram
+    class Repository~T~ {
+        <<interface>>
+        +Create(ctx, *T) error
+        +Get(ctx, id string) *T, error
+        +Update(ctx, *T) error
+        +Delete(ctx, id string) error
+        +List(ctx, ...Filter) []*T, error
     }
-}
+
+    class ModeOfPaymentRepository {
+        <<interface>>
+        +FindByType(ctx, PaymentType) []*ModeOfPayment, error
+    }
+
+    class PostgresMoPRepo {
+        -db *sql.DB
+        +Create(ctx, *ModeOfPayment) error
+        +FindByType(ctx, PaymentType) []*ModeOfPayment, error
+    }
+
+    class MockMoPRepo {
+        -data map[string]*ModeOfPayment
+        +Create(ctx, *ModeOfPayment) error
+        +FindByType(ctx, PaymentType) []*ModeOfPayment, error
+    }
+
+    Repository~T~ <|-- ModeOfPaymentRepository
+    ModeOfPaymentRepository <|.. PostgresMoPRepo
+    ModeOfPaymentRepository <|.. MockMoPRepo
 ```
 
 #### Specification Pattern
 
-```go
-// Each validation is a specification
-func (m *ModeOfPayment) ValidateRepeatingCompanies() error { ... }
-func (m *ModeOfPayment) ValidateAccounts(lookup AccountLookup) error { ... }
-func (m *ModeOfPayment) ValidatePOSModeOfPayment(checker POSChecker) error { ... }
+```mermaid
+flowchart LR
+    subgraph specs["Specifications"]
+        s1["ValidateAccounts"]
+        s2["ValidateRepeatingCompanies"]
+        s3["ValidatePOSModeOfPayment"]
+    end
 
-// Composite specification
-func (m *ModeOfPayment) Validate(lookup AccountLookup, checker POSChecker) error {
-    if err := m.ValidateAccounts(lookup); err != nil {
-        return err
-    }
-    if err := m.ValidateRepeatingCompanies(); err != nil {
-        return err
-    }
-    if err := m.ValidatePOSModeOfPayment(checker); err != nil {
-        return err
-    }
-    return nil
-}
+    subgraph composite["Composite Validate()"]
+        v["Validate()"]
+    end
+
+    s1 --> v
+    s2 --> v
+    s3 --> v
+
+    v -->|"all pass"| success["✓ nil"]
+    v -->|"any fail"| error["✗ error"]
+
+    style specs fill:#cce5ff
+    style composite fill:#fff3cd
 ```
 
 ---
 
 ## Trade-off Analysis
 
-### Complexity vs. Testability
+### Complexity vs Testability
 
-```
-                    High Testability
-                          │
-                          │    ✅ Our Choice
-                          │    (Interface-based DI)
-                          │         ●
-                          │
-                          │
-   Low Complexity ────────┼──────── High Complexity
-                          │
-              ●           │
-        Global functions  │
-        (Like Frappe)     │
-                          │
-                    Low Testability
-```
+```mermaid
+quadrantChart
+    title Complexity vs Testability Trade-off
+    x-axis Low Complexity --> High Complexity
+    y-axis Low Testability --> High Testability
+    quadrant-1 Ideal Zone
+    quadrant-2 Over-engineered
+    quadrant-3 Legacy Trap
+    quadrant-4 Technical Debt
 
-### Performance vs. Maintainability
-
-```
-                    High Performance
-                          │
-                          │         ●
-                          │    Hand-optimized C
-                          │
-              ●           │
-         Go (our choice)  │
-                          │
-   Low Maintainability ───┼──────── High Maintainability
-                          │
-                          │
-                          │              ●
-                          │         Python/Frappe
-                          │
-                    Low Performance
+    Global Functions: [0.2, 0.15]
+    Interface DI: [0.65, 0.85]
+    Framework Magic: [0.8, 0.4]
+    Simple Structs: [0.3, 0.5]
 ```
 
-### Migration Speed vs. Risk
+### Performance vs Maintainability
 
+```mermaid
+quadrantChart
+    title Performance vs Maintainability Trade-off
+    x-axis Low Maintainability --> High Maintainability
+    y-axis Low Performance --> High Performance
+
+    Hand-optimized C: [0.2, 0.9]
+    Go with interfaces: [0.7, 0.75]
+    Python Frappe: [0.85, 0.3]
+    Java Enterprise: [0.6, 0.5]
 ```
-                    Fast Migration
-                          │
-              ●           │
-        Big Bang Rewrite  │
-        (High Risk)       │
-                          │
-   High Risk ─────────────┼──────── Low Risk
-                          │
-                          │              ●
-                          │    ✅ Strangler Fig
-                          │    (Our Choice)
-                          │
-                    Slow Migration
+
+### Migration Speed vs Risk
+
+```mermaid
+quadrantChart
+    title Migration Speed vs Risk Trade-off
+    x-axis High Risk --> Low Risk
+    y-axis Slow Migration --> Fast Migration
+
+    Big Bang Rewrite: [0.15, 0.85]
+    Strangler Fig: [0.8, 0.4]
+    Branch by Abstraction: [0.6, 0.5]
+    Parallel Run Forever: [0.9, 0.1]
 ```
 
 ---
 
 ## Anti-Patterns to Avoid
 
-### ❌ Don't Do This
+### What Not to Do
 
-| Anti-Pattern | Why It's Bad | What To Do Instead |
-|--------------|--------------|---------------------|
-| **Global state** | Untestable, race conditions | Dependency injection |
-| **String errors** | Can't handle programmatically | Typed sentinel errors |
-| **God objects** | Hard to test, change, understand | Single responsibility |
-| **Anemic domain** | Logic scattered across layers | Rich domain model |
-| **Premature optimization** | Complexity without proof | Profile first |
-| **Copy-paste ERPNext** | Inherit bad patterns | Redesign for Go idioms |
+```mermaid
+flowchart TB
+    subgraph antipatterns["❌ Anti-Patterns"]
+        global["Global State"]
+        stringerr["String Errors"]
+        godobj["God Objects"]
+        anemic["Anemic Domain"]
+        premature["Premature Optimization"]
+        copypaste["Copy-Paste ERPNext"]
+    end
 
-### Code Examples
+    subgraph solutions["✅ Solutions"]
+        di["Dependency Injection"]
+        typed["Typed Errors"]
+        srp["Single Responsibility"]
+        rich["Rich Domain Model"]
+        profile["Profile First"]
+        redesign["Redesign for Go"]
+    end
 
-```go
-// ❌ BAD: Global state
-var db *sql.DB  // Package-level variable
+    global -->|"replace with"| di
+    stringerr -->|"replace with"| typed
+    godobj -->|"replace with"| srp
+    anemic -->|"replace with"| rich
+    premature -->|"replace with"| profile
+    copypaste -->|"replace with"| redesign
 
-func GetAccount(name string) (*Account, error) {
-    return db.Query("SELECT ...")  // How to test?
-}
-
-// ✅ GOOD: Dependency injection
-type AccountService struct {
-    repo AccountRepository
-}
-
-func (s *AccountService) GetAccount(ctx context.Context, name string) (*Account, error) {
-    return s.repo.Get(ctx, name)  // repo can be mocked
-}
+    style antipatterns fill:#f8d7da,stroke:#721c24
+    style solutions fill:#d4edda,stroke:#155724
 ```
 
-```go
-// ❌ BAD: String error checking
-if err.Error() == "same company is entered more than once" {
-    // Fragile!
-}
+### Code Comparison
 
-// ✅ GOOD: Typed error checking
-if errors.Is(err, ErrDuplicateCompany) {
-    // Robust!
-}
-```
+```mermaid
+flowchart LR
+    subgraph bad["❌ BAD"]
+        badcode["var db *sql.DB<br/><br/>func GetAccount(name) {<br/>  return db.Query(...)<br/>}"]
+    end
 
-```go
-// ❌ BAD: Mixing concerns (Active Record)
-type ModeOfPayment struct {
-    Name string
-    db   *sql.DB  // Infrastructure in domain!
-}
+    subgraph good["✅ GOOD"]
+        goodcode["type AccountService struct {<br/>  repo AccountRepository<br/>}<br/><br/>func (s *AccountService) GetAccount(ctx, name) {<br/>  return s.repo.Get(ctx, name)<br/>}"]
+    end
 
-func (m *ModeOfPayment) Save() error {
-    return m.db.Exec("INSERT ...")
-}
+    bad -->|"refactor to"| good
 
-// ✅ GOOD: Separation of concerns
-type ModeOfPayment struct {
-    Name string
-    // No DB reference
-}
-
-type ModeOfPaymentRepository interface {
-    Save(ctx context.Context, m *ModeOfPayment) error
-}
+    style bad fill:#f8d7da
+    style good fill:#d4edda
 ```
 
 ---
@@ -479,55 +454,97 @@ type ModeOfPaymentRepository interface {
 
 ### ADR-001: Use Go for Modernization
 
+```mermaid
+flowchart TB
+    subgraph context["Context"]
+        c1["ERPNext written in Python"]
+        c2["Need modernization target"]
+        c3["Team has mixed experience"]
+    end
+
+    subgraph options["Options Evaluated"]
+        o1["Python (stay)"]
+        o2["Go"]
+        o3["Rust"]
+        o4["Java/Kotlin"]
+    end
+
+    subgraph decision["Decision: Go"]
+        d1["Strong typing"]
+        d2["Fast compilation"]
+        d3["Single binary deploy"]
+        d4["Good concurrency"]
+    end
+
+    context --> options
+    options --> decision
+    o2 -->|"selected"| decision
+
+    style decision fill:#d4edda,stroke:#155724
+```
+
 **Status:** Accepted
 **Date:** 2026-01-27
-
-**Context:**
-ERPNext is written in Python/Frappe. We need a modernization target language.
-
-**Decision:**
-Use Go for the modernized services.
-
-**Consequences:**
-- Team needs Go training
-- Better performance and deployment story
-- Strong typing catches bugs at compile time
-
----
 
 ### ADR-002: PostgreSQL over MariaDB
 
+```mermaid
+flowchart LR
+    subgraph legacy["Legacy"]
+        mariadb[("MariaDB")]
+    end
+
+    subgraph modern["Modern"]
+        postgres[("PostgreSQL")]
+    end
+
+    subgraph rationale["Rationale"]
+        r1["Better Go drivers"]
+        r2["JSON support"]
+        r3["Enum types"]
+        r4["Advanced indexing"]
+    end
+
+    legacy -->|"migrate to"| modern
+    rationale --> modern
+
+    style legacy fill:#f8d7da
+    style modern fill:#d4edda
+```
+
 **Status:** Accepted
 **Date:** 2026-01-27
-
-**Context:**
-ERPNext uses MariaDB. Go has better PostgreSQL tooling.
-
-**Decision:**
-Use PostgreSQL for Go services, sync data during migration.
-
-**Consequences:**
-- Need data sync mechanism
-- Better Go ecosystem support
-- Can use PostgreSQL-specific features
-
----
 
 ### ADR-003: Interface-Based Testing
 
+```mermaid
+flowchart TB
+    subgraph problem["Problem"]
+        p1["Need to test without DB"]
+        p2["External dependencies everywhere"]
+        p3["Frappe uses globals"]
+    end
+
+    subgraph solution["Solution"]
+        s1["Define interfaces for deps"]
+        s2["Inject implementations"]
+        s3["Use mocks in tests"]
+    end
+
+    subgraph benefit["Benefits"]
+        b1["Tests run in milliseconds"]
+        b2["No test database needed"]
+        b3["Isolated unit tests"]
+    end
+
+    problem --> solution
+    solution --> benefit
+
+    style solution fill:#d4edda
+```
+
 **Status:** Accepted
 **Date:** 2026-01-27
-
-**Context:**
-Need to test business logic without database.
-
-**Decision:**
-Define interfaces for all external dependencies.
-
-**Consequences:**
-- More interface definitions
-- Mocks enable fast unit tests
-- Production implementations are pluggable
 
 ---
 

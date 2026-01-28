@@ -32,13 +32,33 @@ AI Engineering applies AI assistants to accelerate legacy code modernization thr
 
 ### Traditional vs AI-Assisted Approach
 
-| Traditional Approach | AI-Assisted Approach |
-|---------------------|----------------------|
-| Manual code reading (hours) | Automated pattern extraction (minutes) |
-| Implicit business rules | Documented rule extraction |
-| Sparse test coverage | Generated comprehensive test cases |
-| Months of analysis | Days of analysis |
-| Senior developer bottleneck | Democratized understanding |
+```mermaid
+flowchart LR
+    subgraph traditional["Traditional Approach"]
+        t1["Manual code reading<br/>(hours)"]
+        t2["Implicit business rules"]
+        t3["Sparse test coverage"]
+        t4["Months of analysis"]
+        t5["Senior dev bottleneck"]
+    end
+
+    subgraph ai["AI-Assisted Approach"]
+        a1["Automated extraction<br/>(minutes)"]
+        a2["Documented rules"]
+        a3["Generated test cases"]
+        a4["Days of analysis"]
+        a5["Democratized understanding"]
+    end
+
+    t1 -->|"8x faster"| a1
+    t2 -->|"explicit"| a2
+    t3 -->|"comprehensive"| a3
+    t4 -->|"accelerated"| a4
+    t5 -->|"scalable"| a5
+
+    style traditional fill:#f8d7da
+    style ai fill:#d4edda
+```
 
 ### ROI of AI-Assisted Modernization
 
@@ -55,21 +75,86 @@ Based on the ERPNext migration experience:
 
 ## AI Engineering Phases
 
-### Phase Diagram
+### Phase Overview
 
-```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│  Discovery  │ → │   Design    │ → │Implementation│ → │ Validation  │ → │   Cutover   │
-│             │    │             │    │             │    │             │    │             │
-│ • Analyze   │    │ • Interfaces│    │ • Translate │    │ • Parity    │    │ • Shadow    │
-│ • Extract   │    │ • Structs   │    │ • Test      │    │ • Coverage  │    │ • Feature   │
-│ • Map deps  │    │ • Errors    │    │ • Document  │    │ • Edge cases│    │   flags     │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+```mermaid
+flowchart LR
+    subgraph p1["🔍 Discovery"]
+        d1["Analyze"]
+        d2["Extract"]
+        d3["Map deps"]
+    end
+
+    subgraph p2["📐 Design"]
+        e1["Interfaces"]
+        e2["Structs"]
+        e3["Errors"]
+    end
+
+    subgraph p3["⚙️ Implementation"]
+        i1["Translate"]
+        i2["Test"]
+        i3["Document"]
+    end
+
+    subgraph p4["✅ Validation"]
+        v1["Parity"]
+        v2["Coverage"]
+        v3["Edge cases"]
+    end
+
+    subgraph p5["🚀 Cutover"]
+        c1["Shadow"]
+        c2["Feature flags"]
+    end
+
+    p1 --> p2 --> p3 --> p4 --> p5
+
+    style p1 fill:#cce5ff
+    style p2 fill:#d4edda
+    style p3 fill:#fff3cd
+    style p4 fill:#d1ecf1
+    style p5 fill:#f5c6cb
 ```
 
 ### Phase 1: Discovery
 
 **Goal:** Understand the legacy codebase without modifying it.
+
+```mermaid
+flowchart TB
+    subgraph input["Input"]
+        py["Python Source"]
+        json["DocType JSON"]
+        tests["Existing Tests"]
+    end
+
+    subgraph ai_tasks["AI Tasks"]
+        parse["Parse & Identify"]
+        extract["Extract Rules"]
+        trace["Trace Dependencies"]
+    end
+
+    subgraph output["Deliverables"]
+        mapping["Field Mapping Table"]
+        rules["Business Rules Doc"]
+        deps["Dependency List"]
+        gaps["Test Gap Analysis"]
+    end
+
+    input --> ai_tasks --> output
+
+    subgraph human["Human Role"]
+        validate["Validate understanding"]
+        prioritize["Prioritize dependencies"]
+    end
+
+    ai_tasks --> human
+    human --> output
+
+    style ai_tasks fill:#cce5ff
+    style human fill:#fff3cd
+```
 
 | Activity | AI Role | Human Role |
 |----------|---------|------------|
@@ -78,27 +163,31 @@ Based on the ERPNext migration experience:
 | **Dependency Mapping** | Trace `frappe.get_value()` calls | Prioritize which dependencies to abstract |
 | **Test Analysis** | Identify existing tests, coverage gaps | Decide test strategy |
 
-**Deliverables:**
-- Field mapping table (Python → Go)
-- Business rules document
-- External dependency list
-- Test gap analysis
-
-**Example Prompt:**
-```
-Read the Python file at:
-erpnext/accounts/doctype/mode_of_payment/mode_of_payment.py
-
-Extract all business rules in this format:
-
-| Rule ID | Method | Description | Error Condition |
-|---------|--------|-------------|-----------------|
-| R1 | validate_repeating_companies | No duplicate companies | frappe.throw() |
-```
-
 ### Phase 2: Design
 
 **Goal:** Map legacy architecture to modern patterns.
+
+```mermaid
+flowchart LR
+    subgraph legacy["Legacy Concepts"]
+        frappe["frappe.get_value()"]
+        throw["frappe.throw()"]
+        doc["Document class"]
+    end
+
+    subgraph modern["Modern Patterns"]
+        interface["Go Interfaces"]
+        errors["Typed Errors"]
+        entity["Domain Entity"]
+    end
+
+    frappe -->|"maps to"| interface
+    throw -->|"maps to"| errors
+    doc -->|"maps to"| entity
+
+    style legacy fill:#306998,color:#fff
+    style modern fill:#00ADD8,color:#fff
+```
 
 | Activity | AI Role | Human Role |
 |----------|---------|------------|
@@ -107,23 +196,32 @@ Extract all business rules in this format:
 | **Error Strategy** | Map `frappe.throw()` to typed errors | Decide error granularity |
 | **Test Strategy** | Propose test case matrix | Approve test boundaries |
 
-**Deliverables:**
-- Go interface definitions
-- Struct designs with comments
-- Error type catalog
-- Test case matrix
-
-**Example Output:**
-```go
-// Port interface derived from frappe.get_cached_value() calls
-type AccountLookup interface {
-    GetAccountCompany(accountName string) (string, error)
-}
-```
-
 ### Phase 3: Implementation
 
 **Goal:** Generate Go code with parity to Python.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Human
+    participant AI
+    participant Codebase
+
+    Human->>AI: "Implement validate_accounts()"
+    AI->>Codebase: Read Python source
+    AI->>AI: Understand logic
+    AI->>Codebase: Generate Go code
+    AI->>Human: Present with comments
+
+    Human->>AI: "Add edge case for empty"
+    AI->>Codebase: Update implementation
+
+    Human->>AI: "Generate tests"
+    AI->>Codebase: Create table-driven tests
+    AI->>Human: Present test file
+
+    Human->>Codebase: Review & approve
+```
 
 | Activity | AI Role | Human Role |
 |----------|---------|------------|
@@ -132,68 +230,80 @@ type AccountLookup interface {
 | **Test Generation** | Create table-driven tests | Add edge cases |
 | **Documentation** | Generate parity report | Review completeness |
 
-**Deliverables:**
-- Go source files with Python-equivalent comments
-- Test files with table-driven tests
-- Parity report
-- Coverage report
-
-**Code Pattern:**
-```go
-// MergeSimilarEntries combines GL entries with the same merge key.
-//
-// Maps to: merge_similar_entries() in general_ledger.py (lines 273-326)
-//
-// Python equivalent:
-//   def merge_similar_entries(gl_map, precision=None):
-//       merged_gl_map = []
-//       for entry in gl_map:
-//           same_head = check_if_in_list(entry, merged_gl_map)
-//           if same_head:
-//               same_head.debit += entry.debit
-func MergeSimilarEntries(glMap []GLEntry) []GLEntry {
-    // Go implementation
-}
-```
-
 ### Phase 4: Validation
 
 **Goal:** Prove Go implementation matches Python behavior.
 
-| Activity | AI Role | Human Role |
-|----------|---------|------------|
-| **Parity Testing** | Generate tests with same inputs | Set up test infrastructure |
-| **Edge Case Discovery** | Analyze Python for unusual branches | Validate edge cases matter |
-| **Error Message Matching** | Compare error messages | Accept intentional differences |
-| **Performance Baseline** | Generate benchmark tests | Set performance targets |
+```mermaid
+flowchart TB
+    subgraph inputs["Test Inputs"]
+        same["Same inputs<br/>for both"]
+    end
 
-**Deliverables:**
-- Passing test suite (target: 90%+ coverage)
-- Parity verification report
-- Performance comparison
+    inputs --> python["🐍 Python"]
+    inputs --> go["🔷 Go"]
+
+    python --> py_out["Python Output"]
+    go --> go_out["Go Output"]
+
+    py_out --> compare["📊 Compare"]
+    go_out --> compare
+
+    compare --> result{Match?}
+
+    result -->|"✅ Yes"| pass["Parity Confirmed"]
+    result -->|"❌ No"| diff["Analyze Differences"]
+
+    diff --> fix["Fix Go Code"]
+    fix --> go
+
+    style pass fill:#d4edda
+    style diff fill:#f8d7da
+```
 
 ### Phase 5: Cutover
 
 **Goal:** Safely route traffic to Go implementation.
 
-| Activity | AI Role | Human Role |
-|----------|---------|------------|
-| **Shadow Mode Setup** | Generate comparison logic | Configure infrastructure |
-| **Difference Analysis** | Analyze shadow logs | Decide on fixes |
-| **Rollback Plan** | Document feature flag config | Approve rollback criteria |
-| **Monitoring** | Suggest metrics to track | Set up dashboards |
+```mermaid
+stateDiagram-v2
+    [*] --> ShadowMode: Deploy
 
-**Deliverables:**
-- Shadow mode running
-- Feature flag configuration
-- Monitoring dashboard
-- Runbook
+    ShadowMode --> ShadowMode: 0% traffic, compare outputs
+
+    ShadowMode --> Canary: Confidence built
+    note right of ShadowMode: All responses compared
+
+    Canary --> Canary: 1% traffic
+    note right of Canary: Monitor error rates
+
+    Canary --> RampUp: No issues
+    Canary --> ShadowMode: Issues found
+
+    RampUp --> RampUp: 10% → 50%
+    RampUp --> FullTraffic: Stable
+
+    FullTraffic --> [*]: 100% Go
+
+    note right of FullTraffic: Python available for rollback
+```
 
 ---
 
 ## AI Capabilities Matrix
 
 ### What AI Does Well
+
+```mermaid
+radar
+    title AI Capabilities in Legacy Modernization
+    "Pattern Recognition" : 0.9
+    "Business Logic Extraction" : 0.85
+    "Test Case Generation" : 0.9
+    "Code Translation" : 0.85
+    "Documentation" : 0.95
+    "Interface Design" : 0.75
+```
 
 | Capability | Strength | Example from ERPNext |
 |------------|----------|---------------------|
@@ -203,7 +313,6 @@ func MergeSimilarEntries(glMap []GLEntry) []GLEntry {
 | **Code Translation** | High | Converted `frappe.throw()` to Go `ValidationError` |
 | **Documentation** | High | Created parity reports with side-by-side comparisons |
 | **Interface Design** | Medium-High | Proposed `AccountLookup` and `POSChecker` interfaces |
-| **Error Message Matching** | High | Preserved ERPNext error text in Go errors |
 
 ### What AI Needs Help With
 
@@ -217,22 +326,53 @@ func MergeSimilarEntries(glMap []GLEntry) []GLEntry {
 
 ### Capability by Task Type
 
-| Task Type | AI Capability | Human Requirement |
-|-----------|--------------|-------------------|
-| Read Python code | Autonomous | None |
-| Identify validation methods | Autonomous | Confirmation |
-| Extract business rules | Autonomous | Validation |
-| Design Go interfaces | Propose | Approve |
-| Generate Go code | Draft | Review |
-| Write tests | Draft | Extend |
-| Identify missing rules | Limited | Required |
-| Production deployment | None | Full ownership |
+```mermaid
+flowchart TB
+    subgraph autonomous["🤖 AI Autonomous"]
+        a1["Read Python code"]
+        a2["Identify validation methods"]
+        a3["Extract business rules"]
+    end
+
+    subgraph collaborative["🤝 AI + Human"]
+        c1["Design interfaces"]
+        c2["Generate Go code"]
+        c3["Write tests"]
+    end
+
+    subgraph human_led["👤 Human Required"]
+        h1["Identify missing rules"]
+        h2["Production deployment"]
+        h3["Strategic decisions"]
+    end
+
+    style autonomous fill:#d4edda
+    style collaborative fill:#fff3cd
+    style human_led fill:#cce5ff
+```
 
 ---
 
 ## Human-AI Collaboration Model
 
 ### The Human Role: Strategic Decisions
+
+```mermaid
+mindmap
+  root((Human Decisions))
+    Strategic
+      Module Priority
+      Architecture Choice
+      Technology Selection
+    Tactical
+      Parity vs Improvement
+      Error Granularity
+      Naming Conventions
+    Operational
+      Cutover Timing
+      Rollback Criteria
+      Monitoring Setup
+```
 
 | Decision Type | Example | Why Human? |
 |---------------|---------|------------|
@@ -245,7 +385,7 @@ func MergeSimilarEntries(glMap []GLEntry) []GLEntry {
 ### The AI Role: Tactical Execution
 
 | Task Type | Example | AI Advantage |
-|-----------|---------|--------------|
+|-----------|---------|--------------||
 | **Code Reading** | "Find all `frappe.throw()` calls" | Speed, completeness |
 | **Pattern Extraction** | "Identify validation patterns" | Pattern recognition |
 | **Code Generation** | "Write Go struct for JSON schema" | Consistent output |
@@ -254,26 +394,57 @@ func MergeSimilarEntries(glMap []GLEntry) []GLEntry {
 
 ### Approval Gates
 
-| Gate | Trigger | Approver | Criteria |
-|------|---------|----------|----------|
-| **Design Review** | Interface definitions complete | Tech Lead | Matches architecture principles |
-| **Code Review** | Implementation complete | Developer | Follows patterns, has tests |
-| **Parity Review** | Parity report complete | QA | All business rules covered |
-| **Deployment Review** | Shadow mode successful | Ops | No errors in shadow logs |
+```mermaid
+flowchart LR
+    subgraph gates["Approval Gates"]
+        g1["🎯 Design Review"]
+        g2["👀 Code Review"]
+        g3["✅ Parity Review"]
+        g4["🚀 Deployment Review"]
+    end
+
+    g1 -->|"Tech Lead"| g2
+    g2 -->|"Developer"| g3
+    g3 -->|"QA"| g4
+    g4 -->|"Ops"| deploy["Deploy"]
+
+    style g1 fill:#cce5ff
+    style g2 fill:#d4edda
+    style g3 fill:#fff3cd
+    style g4 fill:#f5c6cb
+```
 
 ---
 
 ## Practical Workflows
 
-### Workflow 1: DocType Migration Session (2-4 hours)
+### Workflow 1: DocType Migration Session
 
-| Phase | Duration | Activities |
-|-------|----------|------------|
-| **1. Analysis** | 30-60 min | AI reads Python, extracts schema, lists rules |
-| **2. Design** | 30 min | AI proposes interfaces, human refines |
-| **3. Implementation** | 60-90 min | AI generates code, human reviews |
-| **4. Testing** | 30-60 min | AI generates tests, human adds edge cases |
-| **5. Documentation** | 15-30 min | AI generates parity report |
+```mermaid
+gantt
+    title DocType Migration Session (2-4 hours)
+    dateFormat HH:mm
+    axisFormat %H:%M
+
+    section Analysis
+    AI reads Python, extracts schema    :a1, 00:00, 30m
+    AI lists business rules             :a2, after a1, 15m
+
+    section Design
+    AI proposes interfaces              :d1, after a2, 15m
+    Human reviews & refines             :d2, after d1, 15m
+
+    section Implementation
+    AI generates Go code                :i1, after d2, 45m
+    Human reviews                       :i2, after i1, 15m
+
+    section Testing
+    AI generates tests                  :t1, after i2, 30m
+    Human adds edge cases               :t2, after t1, 15m
+
+    section Documentation
+    AI generates parity report          :doc, after t2, 15m
+```
 
 ### Workflow 2: Business Rule Extraction
 
@@ -316,14 +487,38 @@ tests := []struct {
 }{...}
 ```
 
-### Progress Tracking Template
+### Progress Tracking
 
-| Iteration | DocType | Analysis | Design | Implement | Test | Deploy |
-|-----------|---------|:--------:|:------:|:---------:|:----:|:------:|
-| 1 | Mode of Payment | ✅ | ✅ | ✅ | ✅ | ⏳ |
-| 2 | Tax Calculator | ✅ | ✅ | ✅ | ✅ | ⏳ |
-| 3 | GL Entry Engine | ✅ | ✅ | ✅ | ⏳ | - |
-| 4 | Account Master | - | - | - | - | - |
+```mermaid
+flowchart LR
+    subgraph mop["Mode of Payment"]
+        mop1["✅ Analysis"]
+        mop2["✅ Design"]
+        mop3["✅ Implement"]
+        mop4["✅ Test"]
+        mop5["⏳ Deploy"]
+    end
+
+    subgraph tax["Tax Calculator"]
+        tax1["✅ Analysis"]
+        tax2["✅ Design"]
+        tax3["✅ Implement"]
+        tax4["✅ Test"]
+        tax5["⏳ Deploy"]
+    end
+
+    subgraph gl["GL Entry Engine"]
+        gl1["✅ Analysis"]
+        gl2["✅ Design"]
+        gl3["✅ Implement"]
+        gl4["⏳ Test"]
+        gl5["- Deploy"]
+    end
+
+    style mop fill:#d4edda
+    style tax fill:#d4edda
+    style gl fill:#fff3cd
+```
 
 ---
 
@@ -331,97 +526,124 @@ tests := []struct {
 
 ### Lesson 1: Schema First, Logic Second
 
+```mermaid
+flowchart LR
+    json["mode_of_payment.json"] -->|"extract fields"| struct["ModeOfPayment struct"]
+    py["mode_of_payment.py"] -->|"extract rules"| methods["Validation methods"]
+
+    struct --> implementation
+    methods --> implementation["Implementation"]
+
+    note["Start with JSON schema,<br/>not Python code"]
+
+    style json fill:#cce5ff
+    style py fill:#fff3cd
+```
+
 **What We Learned:**
 - Start with `doctype.json` to understand data model
 - JSON schema is the source of truth for fields
 - Python code may have computed fields not in schema
 
-**Example:**
-```
-mode_of_payment.json → ModeOfPayment struct
-mode_of_payment_account.json → ModeOfPaymentAccount struct
-```
-
 ### Lesson 2: Validation Methods Are Gold
+
+```mermaid
+flowchart TB
+    validate["validate()"] --> v1["validate_accounts()"]
+    validate --> v2["validate_repeating_companies()"]
+    validate --> v3["validate_pos_mode_of_payment()"]
+
+    v1 -->|"contains"| r1["Business Rule 1"]
+    v2 -->|"contains"| r2["Business Rule 2"]
+    v3 -->|"contains"| r3["Business Rule 3"]
+
+    style validate fill:#306998,color:#fff
+    style r1 fill:#d4edda
+    style r2 fill:#d4edda
+    style r3 fill:#d4edda
+```
 
 **What We Learned:**
 - ERPNext's `validate()` method contains most business rules
 - Sub-methods like `validate_accounts()` are self-documenting
 - Error messages reveal business intent
 
-**Example:**
-```python
-# This method name tells us the rule
-def validate_repeating_companies(self):
-    # This error message tells us why
-    frappe.throw(_("Same Company is entered more than once"))
-```
-
 ### Lesson 3: External Dependencies Need Interfaces
 
-**What We Learned:**
-- `frappe.get_value()` calls indicate external dependencies
-- `frappe.db.sql()` queries reveal data access patterns
-- Each external call becomes an interface method
+```mermaid
+flowchart LR
+    subgraph python["Python Calls"]
+        f1["frappe.get_cached_value()"]
+        f2["frappe.db.sql()"]
+    end
 
-**Example:**
-```python
-# This call → AccountLookup interface
-frappe.get_cached_value("Account", entry.default_account, "company")
-```
+    subgraph go["Go Interfaces"]
+        i1["AccountLookup"]
+        i2["POSChecker"]
+    end
 
-**Becomes:**
-```go
-type AccountLookup interface {
-    GetAccountCompany(accountName string) (string, error)
-}
+    f1 -->|"becomes"| i1
+    f2 -->|"becomes"| i2
+
+    style python fill:#306998,color:#fff
+    style go fill:#00ADD8,color:#fff
 ```
 
 ### Lesson 4: Legacy Test Files May Be Empty
 
-**What We Learned:**
-- ERPNext test files often contain skeleton classes
-- Don't assume Python has good test coverage
-- AI-generated tests often exceed legacy coverage
+```mermaid
+flowchart LR
+    subgraph python["Python Tests"]
+        py_test["test_mode_of_payment.py"]
+        py_count["0 tests"]
+    end
 
-**Example:**
-```python
-# erpnext/accounts/doctype/mode_of_payment/test_mode_of_payment.py
-class TestModeofPayment(IntegrationTestCase):
-    pass  # No actual tests!
+    subgraph go["Go Tests"]
+        go_test["validation_test.go"]
+        go_count["19 tests"]
+    end
+
+    python -->|"AI improves"| go
+
+    style python fill:#f8d7da
+    style go fill:#d4edda
 ```
-
-**Result:** Go has 19 comprehensive tests vs Python's 0.
 
 ### Lesson 5: Complex Algorithms Work Well
 
-**What We Learned:**
-- `taxes_and_totals.py` demonstrates complex business logic
-- 5 different charge types with cascading dependencies
-- AI handled 350+ lines of calculation logic effectively
+**Charge Types Migrated from taxes_and_totals.py:**
 
-**Charge Types Migrated:**
-```
-- Actual (fixed amount, proportional distribution)
-- On Net Total (percentage of line item)
-- On Previous Row Amount (cascading tax)
-- On Previous Row Total (compound tax)
-- On Item Quantity (per-unit charge)
+```mermaid
+flowchart TB
+    subgraph charges["5 Charge Types"]
+        c1["Actual<br/>(fixed amount)"]
+        c2["On Net Total<br/>(% of line item)"]
+        c3["On Previous Row Amount<br/>(cascading tax)"]
+        c4["On Previous Row Total<br/>(compound tax)"]
+        c5["On Item Quantity<br/>(per-unit charge)"]
+    end
+
+    c1 --> c2 --> c3 --> c4 --> c5
+
+    subgraph result["Result"]
+        lines["350+ lines migrated"]
+        accuracy["100% parity"]
+    end
+
+    charges --> result
+
+    style charges fill:#fff3cd
+    style result fill:#d4edda
 ```
 
 ### Lesson 6: Parity Reports Build Confidence
 
-**What We Learned:**
-- Side-by-side Python/Go comparison is invaluable
-- Table format shows field-by-field parity
-- Test count comparison shows coverage improvement
-
-**Example from PARITY_REPORT.md:**
-```
 | Metric | Python | Go | Parity |
 |--------|--------|-----|--------|
-| Test Coverage | 0 tests | 19 tests | Exceeds |
-```
+| Test Coverage | 0 tests | 19 tests | **Exceeds** |
+| Fields Mapped | 4 fields | 4 fields | ✅ |
+| Validations | 3 methods | 3 methods | ✅ |
+| Error Messages | frappe.throw() | ValidationError | ✅ |
 
 ---
 
@@ -429,28 +651,38 @@ class TestModeofPayment(IntegrationTestCase):
 
 ### Strategy 1: Context Loading
 
-**Pattern:** Load relevant files before asking questions
+```mermaid
+sequenceDiagram
+    participant User
+    participant AI
 
-```
-Read these files:
-1. erpnext/accounts/doctype/mode_of_payment/mode_of_payment.py
-2. erpnext/accounts/doctype/mode_of_payment/mode_of_payment.json
-
-Then answer: What validation rules exist in this DocType?
+    User->>AI: Read file A
+    AI->>AI: Load context
+    User->>AI: Read file B
+    AI->>AI: Add to context
+    User->>AI: Now answer: What validation rules exist?
+    AI->>User: Complete analysis with full context
 ```
 
 ### Strategy 2: Iterative Refinement
 
-**Pattern:** Start broad, then narrow
+```mermaid
+flowchart TB
+    q1["List all methods"] --> a1["Method list"]
+    a1 --> q2["Explain validate_accounts()"]
+    q2 --> a2["Detailed explanation"]
+    a2 --> q3["What error does it throw?"]
+    q3 --> a3["Error details"]
+    a3 --> q4["Generate Go code"]
+    q4 --> a4["Go implementation"]
 
-1. "List all methods in the file"
-2. "Explain what `validate_accounts()` does"
-3. "What error does it throw and when?"
-4. "Generate Go code for this method"
+    style q1 fill:#cce5ff
+    style q2 fill:#cce5ff
+    style q3 fill:#cce5ff
+    style q4 fill:#cce5ff
+```
 
 ### Strategy 3: Reference Existing Patterns
-
-**Pattern:** Point to examples in the codebase
 
 ```
 Using the pattern from modeofpayment/validation.go:
@@ -464,8 +696,6 @@ Follow:
 ```
 
 ### Strategy 4: Parity Verification
-
-**Pattern:** Ask AI to verify its own work
 
 ```
 Compare:
@@ -536,6 +766,15 @@ Are they functionally equivalent? List any differences.
 | ledger | 25 | 49.1% | 🔄 In Progress |
 
 ### Lines of Code Migrated
+
+```mermaid
+xychart-beta
+    title Lines of Code: Python vs Go
+    x-axis ["Mode of Payment", "Tax Calculator", "GL Engine"]
+    y-axis "Lines of Code" 0 --> 700
+    bar [150, 350, 550]
+    bar [175, 440, 650]
+```
 
 | Module | Python Lines | Go Lines | Ratio |
 |--------|--------------|----------|-------|
