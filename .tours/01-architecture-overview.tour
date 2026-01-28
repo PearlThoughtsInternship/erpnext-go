@@ -1,0 +1,73 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "01 - Architecture Overview",
+  "description": "Understand how the ERPNext Go modernization project is structured (10 minutes)",
+  "steps": [
+    {
+      "file": "README.md",
+      "line": 1,
+      "title": "Welcome!",
+      "description": "## Welcome to ERPNext Go Modernization! 🎉\n\nThis tour will help you understand:\n\n1. **What** we're building (Python to Go migration)\n2. **Why** we use certain patterns (Hexagonal Architecture)\n3. **Where** to find things in the codebase\n4. **How** to contribute\n\n**Time:** About 10 minutes\n\nClick **Next** to continue →"
+    },
+    {
+      "file": "README.md",
+      "line": 10,
+      "title": "The Big Picture",
+      "description": "## The Migration Strategy\n\nWe're migrating ERPNext (a large Python/Frappe ERP) to Go using the **Strangler Fig Pattern**:\n\n1. Extract one module at a time\n2. Run Python and Go in parallel (shadow mode)\n3. Verify they produce identical results\n4. Gradually shift traffic to Go\n\n**Key insight:** We don't need to migrate everything at once!"
+    },
+    {
+      "file": "ledger/model.go",
+      "line": 1,
+      "title": "The Core: GL Entry",
+      "description": "## General Ledger Entry\n\nThis is the heart of accounting. Every financial transaction creates GL entries:\n\n- **Sales Invoice** → GL entries for revenue, tax, receivables\n- **Payment** → GL entries for cash, bank, payables\n- **Journal Entry** → Direct GL posting\n\nThe `GLEntry` struct mirrors ERPNext's Python structure exactly. This ensures **parity** - same inputs produce same outputs."
+    },
+    {
+      "file": "ledger/model.go",
+      "line": 15,
+      "title": "Struct Fields",
+      "description": "## Understanding the Fields\n\n```go\nAccount     string  // Which ledger account (e.g., \"Sales - ACME\")\nDebit       float64 // Amount debited\nCredit      float64 // Amount credited\nPartyType   string  // \"Customer\", \"Supplier\", etc.\nParty       string  // The actual party name\n```\n\n**Accounting rule:** Total Debits must equal Total Credits for every transaction!"
+    },
+    {
+      "file": "ledger/ports.go",
+      "line": 1,
+      "title": "Ports = Interfaces",
+      "description": "## Hexagonal Architecture: Ports\n\n**Ports** are interfaces that define what our business logic needs, without saying HOW to get it.\n\n```go\ntype AccountLookup interface {\n    GetAccount(name string) (*Account, error)\n}\n```\n\nThis means:\n- Business logic doesn't know about databases\n- We can swap implementations (PostgreSQL, mock, etc.)\n- Testing becomes easy!"
+    },
+    {
+      "file": "ledger/engine.go",
+      "line": 1,
+      "title": "The Engine",
+      "description": "## Business Logic Lives Here\n\nThe `Engine` struct coordinates GL entry operations:\n\n- `ProcessGLMap()` - Main processing pipeline\n- `MergeSimilarEntries()` - Combine entries with same account\n- `ToggleDebitCreditIfNegative()` - Handle refunds/reversals\n\nNotice: The engine uses **interfaces**, not concrete implementations. This is Dependency Injection!"
+    },
+    {
+      "file": "ledger/engine_test.go",
+      "line": 1,
+      "title": "Table-Driven Tests",
+      "description": "## Testing Pattern: Table-Driven\n\nWe use **table-driven tests** throughout:\n\n```go\ntests := []struct {\n    name     string\n    input    []GLEntry\n    expected float64\n}{\n    {\"single_entry\", [...], 100.0},\n    {\"multiple_entries\", [...], 500.0},\n}\n```\n\n**Benefits:**\n- Easy to add new test cases\n- Each case is named (shows in test output)\n- DRY - don't repeat test setup code"
+    },
+    {
+      "file": "ledger/integration_test.go",
+      "line": 1,
+      "title": "Integration Tests",
+      "description": "## Realistic Scenarios\n\nIntegration tests use **realistic ERPNext data**:\n\n- Actual account names (\"Debtors - ACME\")\n- Real tax structures (CGST, SGST at 9%)\n- Multi-currency transactions (USD → INR)\n\nThese tests prove our Go code behaves identically to Python!"
+    },
+    {
+      "file": "taxcalc/calculator.go",
+      "line": 1,
+      "title": "Another Module: Tax Calculator",
+      "description": "## Completed Module: Tax Calculator\n\nThis module (Iteration 2) handles:\n- Tax calculation on items\n- Multiple tax types (percentage, fixed)\n- Indian GST (CGST, SGST, IGST)\n\n**Pattern:** Same architecture - model, ports, tests.\n\nYou can use this as a reference when building new features!"
+    },
+    {
+      "file": "docs/ARCHITECTURE.md",
+      "line": 1,
+      "title": "Deep Dive: Architecture",
+      "description": "## Want More Details?\n\nThe `docs/` folder contains comprehensive documentation:\n\n- **ARCHITECTURE.md** - Hexagonal architecture explained\n- **DESIGN.md** - Why we made certain decisions\n- **IMPLEMENTATION.md** - Step-by-step migration guide\n- **VERIFICATION.md** - How we prove Go matches Python\n\nRead these when you want deeper understanding!"
+    },
+    {
+      "file": "README.md",
+      "line": 250,
+      "title": "Your Turn!",
+      "description": "## Congratulations! 🎉\n\nYou've completed the architecture overview!\n\n**Next steps:**\n\n1. Run the tests: `go test ./...`\n2. Try Exercise 1: `cd exercises/01-glentry-struct`\n3. Look for `good-first-issue` on GitHub\n\n**Need help?** Ask in the #interns Slack channel!\n\nClick **Finish** to end the tour."
+    }
+  ]
+}

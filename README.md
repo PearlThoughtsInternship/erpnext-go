@@ -322,6 +322,28 @@ flowchart LR
 
 ## Contributing
 
+### For Interns (New Contributors)
+
+**Start here:** [Intern Contribution Guide](docs/INTERN_GUIDE.md)
+
+```mermaid
+flowchart LR
+    A["📚 Read Guide"] --> B["🗺️ CodeTour"]
+    B --> C["📝 Exercises"]
+    C --> D["🎯 Good First Issue"]
+    D --> E["🚀 First PR!"]
+
+    style A fill:#e3f2fd
+    style E fill:#d4edda
+```
+
+1. **Setup:** Clone repo, install VS Code extensions
+2. **Learn:** Take the CodeTour, complete exercises in `exercises/`
+3. **Contribute:** Find a [Good First Issue](https://github.com/PearlThoughtsInternship/erpnext-go/labels/good-first-issue)
+4. **Ship:** Submit your first PR!
+
+### For Experienced Contributors
+
 1. Pick a module from the [iteration roadmap](docs/IMPLEMENTATION.md#iteration-roadmap)
 2. Read the [AI Engineering guide](docs/AI_ENGINEERING.md) for workflow
 3. Follow existing patterns in `modeofpayment/` and `taxcalc/`
