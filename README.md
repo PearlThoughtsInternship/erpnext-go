@@ -1,1255 +1,241 @@
 # ERPNext Legacy Modernization — Python to Go
 
 <p align="center">
-  <img src="https://img.shields.io/badge/status-iteration%202%20complete-brightgreen" alt="Status">
-  <img src="https://img.shields.io/badge/tests-43%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/iteration-3%20in%20progress-blue" alt="Status">
+  <img src="https://img.shields.io/badge/tests-68%20passing-brightgreen" alt="Tests">
   <img src="https://img.shields.io/badge/coverage-85%25+-green" alt="Coverage">
-  <img src="https://img.shields.io/badge/business%20logic-500+%20lines-orange" alt="Business Logic">
-  <img src="https://img.shields.io/badge/go-1.21+-blue" alt="Go Version">
-  <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
+  <img src="https://img.shields.io/badge/go-1.21+-00ADD8" alt="Go Version">
 </p>
 
-A demonstration of modernizing ERPNext (Python/Frappe) to Go using the **Strangler Fig Pattern** with iterative, test-driven extraction.
+A demonstration of modernizing ERPNext (Python/Frappe) to Go using the **Strangler Fig Pattern** with AI-assisted, iterative extraction.
 
 ---
 
-## 📋 Table of Contents
-
-- [Quick Start](#-quick-start)
-- [Test Results](#-test-results)
-- [Rationale](#-rationale)
-- [Architecture](#-architecture)
-- [Strangler Fig Pattern](#-strangler-fig-pattern)
-- [Design Choices](#-design-choices)
-- [Implementation](#-implementation)
-- [Iteration 1: Mode of Payment](#-iteration-1-mode-of-payment)
-- [Iteration 2: Tax Calculator](#-iteration-2-tax-calculator)
-- [Parity Report](#-parity-report)
-- [Next Steps](#-next-steps)
-- [Documentation](#-documentation)
-
----
-
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
-# Clone the repository
 git clone git@github.com:PearlThoughtsInternship/erpnext-go.git
 cd erpnext-go
-
-# Run tests
 go test -v ./...
-
-# Check coverage
-go test -cover ./...
 ```
 
 ---
 
-## ✅ Test Results
+## Current Progress
 
-### Executive Summary
+| Iteration | Module | Tests | Coverage | Status |
+|-----------|--------|-------|----------|--------|
+| 1 | Mode of Payment | 19 | 85.3% | ✅ Complete |
+| 2 | Tax Calculator | 24 | 90.2% | ✅ Complete |
+| 3 | **GL Entry Engine** | 25 | 49.1% | 🔄 In Progress |
+| 4 | Account Master | — | — | 📋 Planned |
+| 5 | Journal Entry | — | — | 📋 Planned |
 
-| Metric | Value | Status |
-|--------|-------|--------|
-| **Total Test Cases** | 43 | ✅ All Passing |
-| **Test Suites** | 15 | ✅ All Passing |
-| **Code Coverage** | 85%+ | ✅ Exceeds Target |
-| **Business Logic** | 500+ lines | ✅ Substantial |
-| **Execution Time** | ~1.0s | ✅ Fast |
-
-### Package Breakdown
-
-| Package | Tests | Coverage | Business Logic |
-|---------|-------|----------|----------------|
-| `modeofpayment` | 19 | 85.3% | Validation rules |
-| `taxcalc` | 24 | 85%+ | Tax calculations |
-
-### Test Suite Breakdown
-
-```
-📊 Test Results Report
-══════════════════════════════════════════════════════════════════════
-
-🧪 Suite: TestValidateRepeatingCompanies                    ✅ PASSED
-───────────────────────────────────────────────────────────────────────
-   ├─ empty_accounts_-_valid                                ✅ PASS
-   ├─ single_company_-_valid                                ✅ PASS
-   ├─ unique_companies_-_valid                              ✅ PASS
-   ├─ duplicate_companies_-_error                           ✅ PASS
-   └─ duplicate_among_many_-_error                          ✅ PASS
-
-   📈 Cases: 5/5 passed | ⏱️ Duration: 0.00s
-
-🧪 Suite: TestValidateAccounts                              ✅ PASSED
-───────────────────────────────────────────────────────────────────────
-   ├─ empty_accounts_-_valid                                ✅ PASS
-   ├─ account_matches_company_-_valid                       ✅ PASS
-   ├─ multiple_accounts_all_match_-_valid                   ✅ PASS
-   ├─ account_company_mismatch_-_error                      ✅ PASS
-   └─ empty_default_account_-_skipped                       ✅ PASS
-
-   📈 Cases: 5/5 passed | ⏱️ Duration: 0.00s
-
-🧪 Suite: TestValidatePOSModeOfPayment                      ✅ PASSED
-───────────────────────────────────────────────────────────────────────
-   ├─ enabled_mode_-_always_valid                           ✅ PASS
-   ├─ disabled,_not_in_POS_-_valid                          ✅ PASS
-   ├─ disabled,_used_in_POS_-_error                         ✅ PASS
-   └─ disabled,_used_in_one_POS_-_error                     ✅ PASS
-
-   📈 Cases: 4/4 passed | ⏱️ Duration: 0.00s
-
-🧪 Suite: TestValidate_Integration                          ✅ PASSED
-───────────────────────────────────────────────────────────────────────
-   ├─ valid_mode_-_all_checks_pass                          ✅ PASS
-   ├─ fails_on_duplicate_company                            ✅ PASS
-   ├─ fails_on_account_mismatch                             ✅ PASS
-   └─ fails_on_POS_in_use                                   ✅ PASS
-
-   📈 Cases: 4/4 passed | ⏱️ Duration: 0.00s
-
-══════════════════════════════════════════════════════════════════════
-📊 SUMMARY
-══════════════════════════════════════════════════════════════════════
-
-   Total Suites:    4
-   Total Cases:     19
-   Passed:          19  ✅
-   Failed:          0
-   Skipped:         0
-
-   Coverage:        85.3%
-   Duration:        0.711s
-
-   Status:          ✅ ALL TESTS PASSING
-
-══════════════════════════════════════════════════════════════════════
-```
-
-### Coverage by Function
-
-| Function | Coverage | Status |
-|----------|----------|--------|
-| `ValidateRepeatingCompanies()` | 100.0% | ✅ Full |
-| `ValidateAccounts()` | 88.9% | ✅ High |
-| `ValidatePOSModeOfPayment()` | 87.5% | ✅ High |
-| `Validate()` | 100.0% | ✅ Full |
-| `Unwrap()` | 100.0% | ✅ Full |
-| `Error()` | 0.0% | ⚠️ Utility |
-
-> **Note:** `Error()` is a string formatting utility not exercised by business logic tests.
-
-### Test Case Matrix
-
-| # | Test Case | Rule | Input | Expected | Result |
-|---|-----------|------|-------|----------|--------|
-| 1 | Empty accounts | R1 | `[]` | Pass | ✅ |
-| 2 | Single company | R1 | `[{A}]` | Pass | ✅ |
-| 3 | Unique companies | R1 | `[{A}, {B}, {C}]` | Pass | ✅ |
-| 4 | Duplicate companies | R1 | `[{A}, {A}]` | Error | ✅ |
-| 5 | Duplicate among many | R1 | `[{A}, {B}, {A}]` | Error | ✅ |
-| 6 | Empty accounts | R2 | `[]` | Pass | ✅ |
-| 7 | Account matches | R2 | `A → Company A` | Pass | ✅ |
-| 8 | Multiple match | R2 | `A→A, B→B` | Pass | ✅ |
-| 9 | Account mismatch | R2 | `A → Company B` | Error | ✅ |
-| 10 | Empty default | R2 | `account: ""` | Skip | ✅ |
-| 11 | Enabled mode | R3 | `enabled=true` | Skip | ✅ |
-| 12 | Disabled, no POS | R3 | `enabled=false, []` | Pass | ✅ |
-| 13 | Disabled, in POS | R3 | `enabled=false, [P1,P2]` | Error | ✅ |
-| 14 | Disabled, one POS | R3 | `enabled=false, [P1]` | Error | ✅ |
-| 15 | Integration valid | All | Valid data | Pass | ✅ |
-| 16 | Integration dup | R1 | Duplicate company | Error | ✅ |
-| 17 | Integration mismatch | R2 | Wrong company | Error | ✅ |
-| 18 | Integration POS | R3 | Mode in use | Error | ✅ |
-| 19 | Edge case | R1 | Empty list | Pass | ✅ |
-
-**Legend:** R1 = No Duplicate Companies | R2 = Account-Company Match | R3 = POS Profile Check
+**Total: 68 tests passing across 3 packages**
 
 ---
 
-## 💡 Rationale
+## "But The Accounts Module Has Dependencies!"
 
-### Why Modernize ERPNext?
+> *"I want to extract the Accounts module, but it depends on Stock, Selling, and other modules. Don't I need to migrate everything at once?"*
 
-ERPNext is a mature, feature-rich ERP built on the Frappe framework (Python). While powerful, organizations may need to modernize for:
+**No.** This is the core insight from Sam Newman's *Monolith to Microservices* and Michael Feathers' *Working Effectively with Legacy Code*:
 
-| Challenge | Impact | Severity |
-|-----------|--------|----------|
-| 🔴 **Runtime type safety** | Bugs discovered in production, not development | High |
-| 🔴 **Framework coupling** | Business logic tightly bound to Frappe ORM | High |
-| 🟡 **Testing complexity** | Integration tests require full Frappe stack | Medium |
-| 🟡 **Performance** | Python's GIL limits concurrent request handling | Medium |
-| 🟡 **Deployment** | Requires Python + MariaDB + Redis | Medium |
+### The Bounded Context Strategy
 
-### Why Go?
-
-| Benefit | Description | Impact |
-|---------|-------------|--------|
-| ✅ **Compile-time safety** | Type errors caught before deployment | 🔒 Reliability |
-| ✅ **Single binary** | No runtime dependencies | 🚀 Deployment |
-| ✅ **Concurrency** | Native goroutines for parallel processing | ⚡ Performance |
-| ✅ **Performance** | 10-100x faster for CPU-bound operations | ⚡ Performance |
-| ✅ **Testability** | Interfaces enable isolated unit tests | 🧪 Quality |
-
-### Why Not Rewrite?
-
-> "The only thing a Big Bang rewrite guarantees is a Big Bang." — Martin Fowler
-
-| Rewrite Risk | Strangler Fig Mitigation |
-|--------------|--------------------------|
-| ❌ Business loses features during development | ✅ Legacy remains operational |
-| ❌ Knowledge lost in translation | ✅ Incremental knowledge transfer |
-| ❌ Testing parity nearly impossible | ✅ Test each module before switching |
-| ❌ Timeline/budget always exceed estimates | ✅ Deliver value continuously |
-
----
-
-## 🏗️ Architecture
-
-### Legacy System (ERPNext/Frappe)
-
-> *"The first step in legacy modernization is understanding what you're replacing."* — Michael Feathers, Working Effectively with Legacy Code
-
-```mermaid
-graph TB
-    subgraph FRAPPE["🐍 Frappe Framework"]
-        direction TB
-
-        subgraph DOC["📄 Document Base Class"]
-            MAGIC["Magic field access<br/>(self.fieldname)"]
-            PERSIST["Automatic DB persistence"]
-            HOOKS["Hook system<br/>(validate, on_save, on_trash)"]
-            PERMS["Permission enforcement"]
-        end
-
-        subgraph DOCTYPE["💳 DocType: Mode of Payment"]
-            PY["mode_of_payment.py<br/>(business logic)"]
-            JSON["mode_of_payment.json<br/>(schema definition)"]
-            JS["mode_of_payment.js<br/>(UI controller)"]
-        end
-
-        subgraph DB["🗄️ Data Layer"]
-            FRAPPE_DB["frappe.db / frappe.get_value()"]
-            MARIA[(MariaDB)]
-            REDIS[(Redis Cache)]
-        end
-
-        DOC --> DOCTYPE
-        DOCTYPE --> DB
-        FRAPPE_DB --> MARIA
-        FRAPPE_DB --> REDIS
-    end
-
-    style FRAPPE fill:#3776ab,color:#fff
-    style DOC fill:#ffd43b,color:#000
-    style DOCTYPE fill:#306998,color:#fff
-    style DB fill:#4479a1,color:#fff
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                     ERPNext Monolith (Python)                       │
+│  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐         │
+│  │ Accounts │◄──│  Stock   │◄──│ Selling  │◄──│    HR    │         │
+│  │          │──►│          │──►│          │──►│          │         │
+│  └──────────┘   └──────────┘   └──────────┘   └──────────┘         │
+│       ▲                                                             │
+│       │ Dependencies flow everywhere                                │
+└───────┼─────────────────────────────────────────────────────────────┘
+        │
+        │  Extract with INTERFACES at the boundary
+        ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                      Go Bounded Context                             │
+│                                                                     │
+│   ┌──────────────────────────────────────────────────────────┐     │
+│   │                    Ledger Package                         │     │
+│   │                                                           │     │
+│   │   ┌─────────────────┐     ┌─────────────────┐            │     │
+│   │   │  GLEntry Model  │     │  MakeGLEntries  │            │     │
+│   │   │  (pure Go)      │     │  (pure logic)   │            │     │
+│   │   └─────────────────┘     └─────────────────┘            │     │
+│   │              │                     │                      │     │
+│   │              ▼                     ▼                      │     │
+│   │   ┌─────────────────────────────────────────────┐        │     │
+│   │   │         PORT INTERFACES                      │        │     │
+│   │   │  AccountLookup    CompanySettings           │        │     │
+│   │   │  GLEntryStore     BudgetValidator           │        │     │
+│   │   └─────────────────────────────────────────────┘        │     │
+│   └──────────────────────────────────────────────────────────┘     │
+│                              │                                      │
+│                              ▼                                      │
+│   ┌──────────────────────────────────────────────────────────┐     │
+│   │              ADAPTERS (Swappable)                         │     │
+│   │                                                           │     │
+│   │   🧪 Test: MockAccountLookup    🏭 Prod: PostgresAdapter │     │
+│   │   🧪 Test: MockGLStore          🏭 Prod: MariaDBAdapter  │     │
+│   └──────────────────────────────────────────────────────────┘     │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-### Modernized System (Go) — Hexagonal Architecture
-
-> *"The hexagon is intended to visually emphasize the inside/outside asymmetry."* — Alistair Cockburn, Ports and Adapters
-
-```mermaid
-graph TB
-    subgraph EXTERNAL["External World"]
-        HTTP["🌐 HTTP API"]
-        CLI["⌨️ CLI"]
-        GRPC["📡 gRPC"]
-    end
-
-    subgraph ADAPTERS_IN["Inbound Adapters (Driving)"]
-        HTTP_ADAPTER["HTTP Handler"]
-        CLI_ADAPTER["CLI Handler"]
-    end
-
-    subgraph HEXAGON["🔷 Domain Core (Pure Go)"]
-        direction TB
-
-        subgraph DOMAIN["📦 Domain Layer"]
-            MOP["ModeOfPayment"]
-            TAXCALC["Calculator"]
-            ENTITIES["Entities & Value Objects"]
-        end
-
-        subgraph PORTS["🔌 Port Interfaces"]
-            ACCOUNT_LOOKUP["«interface»<br/>AccountLookup"]
-            POS_CHECKER["«interface»<br/>POSChecker"]
-            PRECISION["«interface»<br/>PrecisionProvider"]
-        end
-
-        DOMAIN --> PORTS
-    end
-
-    subgraph ADAPTERS_OUT["Outbound Adapters (Driven)"]
-        MOCK["🧪 Mock Adapters<br/>(In-memory, Deterministic)"]
-        PROD["🏭 Production Adapters<br/>(PostgreSQL, Redis)"]
-    end
-
-    subgraph INFRA["Infrastructure"]
-        POSTGRES[(PostgreSQL)]
-        REDIS_NEW[(Redis)]
-    end
-
-    HTTP --> HTTP_ADAPTER
-    CLI --> CLI_ADAPTER
-    HTTP_ADAPTER --> HEXAGON
-    CLI_ADAPTER --> HEXAGON
-    PORTS --> MOCK
-    PORTS --> PROD
-    PROD --> POSTGRES
-    PROD --> REDIS_NEW
-
-    style HEXAGON fill:#00add8,color:#fff
-    style DOMAIN fill:#007d9c,color:#fff
-    style PORTS fill:#5dc9e2,color:#000
-    style ADAPTERS_OUT fill:#f0f0f0,color:#000
-```
-
-### Bounded Contexts (DDD Strategic Design)
-
-> *"A Bounded Context delimits the applicability of a particular model."* — Eric Evans, Domain-Driven Design
-
-```mermaid
-graph LR
-    subgraph LEGACY["🐍 ERPNext (Legacy Context)"]
-        L_MOP["Mode of Payment"]
-        L_TAX["Taxes & Totals"]
-        L_INV["Sales Invoice"]
-        L_PAY["Payment Entry"]
-    end
-
-    subgraph MODERNIZED["🔵 Go (Modernized Context)"]
-        M_MOP["modeofpayment<br/>Package"]
-        M_TAX["taxcalc<br/>Package"]
-    end
-
-    subgraph ACL["🛡️ Anti-Corruption Layer"]
-        TRANSLATOR["Model Translator"]
-        ADAPTER["Protocol Adapter"]
-    end
-
-    L_MOP -.->|"Shadow Mode"| ACL
-    L_TAX -.->|"Shadow Mode"| ACL
-    ACL --> M_MOP
-    ACL --> M_TAX
-
-    L_INV --> L_MOP
-    L_INV --> L_TAX
-    L_PAY --> L_MOP
-
-    style LEGACY fill:#3776ab,color:#fff
-    style MODERNIZED fill:#00add8,color:#fff
-    style ACL fill:#ff6b6b,color:#fff
-```
-
----
-
-## 🌿 Strangler Fig Pattern
-
-### Concept
-
-> *"The Strangler Fig grows around its host tree, eventually replacing it entirely while the host continues to function."* — Martin Fowler
-
-```mermaid
-flowchart LR
-    subgraph P1["Phase 1: Identify"]
-        direction TB
-        L1["🐍 Legacy System"]
-        M1["📦 Module"]
-        L1 --- M1
-    end
-
-    subgraph P2["Phase 2: Extract"]
-        direction TB
-        L2["🐍 Legacy System"]
-        M2["📦 Module"]
-        G2["🔵 Go Module<br/>(shadow)"]
-        L2 --- M2
-        M2 -.->|"copy"| G2
-    end
-
-    subgraph P3["Phase 3: Redirect"]
-        direction TB
-        L3["🐍 Legacy System"]
-        M3["📦 Module<br/>(dormant)"]
-        G3["🔵 Go Module<br/>(primary)"]
-        L3 -.- M3
-        L3 ==>|"route"| G3
-    end
-
-    subgraph P4["Phase 4: Remove"]
-        direction TB
-        G4["🔵 Go Module<br/>(sole)"]
-    end
-
-    P1 ==> P2 ==> P3 ==> P4
-
-    style P1 fill:#ffebee,color:#000
-    style P2 fill:#fff3e0,color:#000
-    style P3 fill:#e8f5e9,color:#000
-    style P4 fill:#e3f2fd,color:#000
-    style G2 fill:#00add8,color:#fff
-    style G3 fill:#00add8,color:#fff
-    style G4 fill:#00add8,color:#fff
-```
-
-### Migration State Machine
-
-```mermaid
-stateDiagram-v2
-    [*] --> Legacy: System Running
-
-    Legacy --> Identified: Select Module
-    Identified --> Extracted: Reimplement in Go
-    Extracted --> Shadowing: Deploy Shadow Mode
-    Shadowing --> Redirected: Switch Traffic
-    Redirected --> Removed: Deprecate Python
-
-    Removed --> [*]: Migration Complete
-
-    note right of Shadowing
-        Both systems run
-        Compare outputs
-        Feature flags control routing
-    end note
-
-    note right of Extracted
-        Go module has tests
-        Parity verified
-        No production traffic yet
-    end note
-```
-
-### Implementation Phases
-
-| Phase | Action | Risk | Rollback |
-|-------|--------|------|----------|
-| 1️⃣ **Identify** | Select bounded module | None | N/A |
-| 2️⃣ **Extract** | Reimplement in Go with tests | Low | Don't deploy |
-| 3️⃣ **Shadow** | Run both, compare outputs | Low | Disable shadow |
-| 4️⃣ **Redirect** | Route traffic to Go | Medium | Feature flag |
-| 5️⃣ **Remove** | Deprecate Python code | Low | Restore route |
-
----
-
-## 🎯 Design Choices
-
-### UML Class Diagram — Domain Model
-
-> *"The domain model is a rigorously organized and selective abstraction of knowledge."* — Eric Evans, Domain-Driven Design
-
-```mermaid
-classDiagram
-    direction TB
-
-    class ModeOfPayment {
-        +string Name
-        +PaymentType Type
-        +bool Enabled
-        +[]ModeOfPaymentAccount Accounts
-        +ValidateRepeatingCompanies() error
-        +ValidateAccounts(AccountLookup) error
-        +ValidatePOSModeOfPayment(POSChecker) error
-        +Validate(AccountLookup, POSChecker) error
-    }
-
-    class ModeOfPaymentAccount {
-        +string Company
-        +string DefaultAccount
-    }
-
-    class PaymentType {
-        <<enumeration>>
-        Cash
-        Bank
-        General
-        Phone
-    }
-
-    class AccountLookup {
-        <<interface>>
-        +GetAccountCompany(string) (string, error)
-    }
-
-    class POSChecker {
-        <<interface>>
-        +GetPOSProfilesUsingMode(string) ([]string, error)
-    }
-
-    class ValidationError {
-        +error Err
-        +string Details
-        +Error() string
-        +Unwrap() error
-    }
-
-    ModeOfPayment *-- ModeOfPaymentAccount : contains
-    ModeOfPayment --> PaymentType : uses
-    ModeOfPayment ..> AccountLookup : depends on
-    ModeOfPayment ..> POSChecker : depends on
-    ModeOfPayment ..> ValidationError : returns
-```
-
-### UML Class Diagram — Tax Calculator
-
-```mermaid
-classDiagram
-    direction TB
-
-    class Calculator {
-        +*Document Doc
-        +PrecisionProvider Precision
-        +Calculate() error
-        -calculateItemValues()
-        -calculateNetTotal()
-        -calculateTaxes()
-        -getCurrentTaxAmount(item, tax, rate) float64
-        -setCumulativeTotal(tax)
-        -setInCompanyCurrency()
-    }
-
-    class Document {
-        +string Currency
-        +float64 ConversionRate
-        +[]*LineItem Items
-        +[]*TaxRow Taxes
-        +float64 NetTotal
-        +float64 GrandTotal
-    }
-
-    class LineItem {
-        +string ItemCode
-        +float64 Qty
-        +float64 Rate
-        +float64 Amount
-        +float64 NetAmount
-        +float64 DiscountPercentage
-    }
-
-    class TaxRow {
-        +string AccountHead
-        +ChargeType ChargeType
-        +float64 Rate
-        +int RowID
-        +float64 TaxAmount
-        +float64 Total
-    }
-
-    class ChargeType {
-        <<enumeration>>
-        Actual
-        OnNetTotal
-        OnPreviousRowAmount
-        OnPreviousRowTotal
-        OnItemQuantity
-    }
-
-    class PrecisionProvider {
-        <<interface>>
-        +GetPrecision(string) int
-    }
-
-    Calculator --> Document : processes
-    Calculator ..> PrecisionProvider : depends on
-    Document *-- LineItem : contains
-    Document *-- TaxRow : contains
-    TaxRow --> ChargeType : uses
-```
-
-### Sequence Diagram — Validation Flow
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant MOP as ModeOfPayment
-    participant AL as AccountLookup
-    participant PC as POSChecker
-
-    Client->>MOP: Validate(lookup, checker)
-    activate MOP
-
-    Note over MOP: Rule 1: Check duplicates
-    MOP->>MOP: ValidateRepeatingCompanies()
-    alt Duplicate Found
-        MOP-->>Client: ErrDuplicateCompany
-    end
-
-    Note over MOP: Rule 2: Check account-company match
-    loop For each account
-        MOP->>AL: GetAccountCompany(defaultAccount)
-        AL-->>MOP: company
-        alt Mismatch
-            MOP-->>Client: ErrAccountMismatch
-        end
-    end
-
-    Note over MOP: Rule 3: Check POS usage
-    alt Mode is disabled
-        MOP->>PC: GetPOSProfilesUsingMode(name)
-        PC-->>MOP: []profiles
-        alt In use
-            MOP-->>Client: ErrModeInUse
-        end
-    end
-
-    MOP-->>Client: nil (success)
-    deactivate MOP
-```
-
-### 1. Interface-Based Dependency Injection
-
-> *"Depend on abstractions, not concretions."* — SOLID Principles (Dependency Inversion)
-
-**Problem:** Frappe's `frappe.get_value()` and `frappe.db.sql()` are global functions that couple business logic to the database.
-
-**Solution:** Define interfaces that abstract external dependencies.
+### How We Handle Dependencies
+
+| Dependency Type | Strategy | Example |
+|-----------------|----------|---------|
+| **Data from other modules** | Interface + Mock | `AccountLookup.GetAccount()` returns mock data in tests |
+| **Writes to other modules** | Interface + Stub | `GLEntryStore.Save()` validates behavior without DB |
+| **Complex cross-module logic** | Anti-Corruption Layer | Translate Stock concepts to Accounts concepts |
+| **Shared calculations** | Extract to shared package | `Flt()`, `Round()` utilities |
+
+### The Test Double Hierarchy
+
+From *xUnit Test Patterns* by Gerard Meszaros:
+
+| Double | Purpose | We Use It For |
+|--------|---------|---------------|
+| **Mock** | Verify interactions | `GLEntryStore.Save()` was called correctly |
+| **Stub** | Return canned answers | `AccountLookup.IsDisabled()` returns `false` |
+| **Fake** | Working implementation | In-memory store for integration tests |
+| **Spy** | Record calls for later | Verify GL entries posted in correct order |
+
+### Real Example: GL Entry Engine
+
+The GL Entry Engine depends on:
+- Account master data → **`AccountLookup` interface**
+- Company settings → **`CompanySettings` interface**
+- Budget validation → **`BudgetValidator` interface**
+- Payment ledger → **`PaymentLedgerStore` interface**
 
 ```go
-// Port interface - defines what we need
+// ports.go - Define what we NEED, not how to get it
 type AccountLookup interface {
-    GetAccountCompany(accountName string) (string, error)
+    GetAccount(name string) (*Account, error)
+    IsDisabled(name string) (bool, error)
 }
 
-// Business logic depends on interface, not implementation
-func (m *ModeOfPayment) ValidateAccounts(lookup AccountLookup) error {
+// engine.go - Business logic uses interfaces
+func (e *Engine) MakeGLEntries(glMap []GLEntry, opts PostingOptions) error {
+    // Validate disabled accounts - works with ANY implementation
+    if err := e.validateDisabledAccounts(glMap); err != nil {
+        return err
+    }
     // ...
 }
-```
 
-| Benefit | Description |
-|---------|-------------|
-| 🧪 **Testability** | Mock implementations for fast, isolated tests |
-| 🔄 **Flexibility** | Swap database backends without changing logic |
-| 📦 **Modularity** | Clear boundaries between layers |
-
-### 2. Typed Sentinel Errors
-
-**Problem:** Python uses exceptions with string messages. Hard to programmatically handle specific errors.
-
-**Solution:** Define typed error constants.
-
-```go
-var (
-    ErrDuplicateCompany = errors.New("same company is entered more than once")
-    ErrAccountMismatch  = errors.New("account does not match with company")
-    ErrModeInUse        = errors.New("mode of payment is used in POS profiles")
-)
-
-// Callers can check error type
-if errors.Is(err, ErrDuplicateCompany) {
-    // Handle duplicate company specifically
+// engine_test.go - Tests use mocks
+func TestValidateDisabledAccounts(t *testing.T) {
+    engine := &Engine{
+        Accounts: &mockAccountLookup{...}, // No real DB needed
+    }
+    // Test runs in milliseconds
 }
 ```
 
-### 3. Table-Driven Tests
+### The Strangler Fig In Action
 
-**Problem:** ERPNext's test file is a skeleton with no actual test cases.
-
-**Solution:** Comprehensive table-driven tests covering all branches.
-
-```go
-tests := []struct {
-    name     string
-    input    *ModeOfPayment
-    wantErr  error
-}{
-    {"valid - unique companies", validMode, nil},
-    {"invalid - duplicate company", dupMode, ErrDuplicateCompany},
-}
-
-for _, tt := range tests {
-    t.Run(tt.name, func(t *testing.T) {
-        err := tt.input.ValidateRepeatingCompanies()
-        if !errors.Is(err, tt.wantErr) {
-            t.Errorf("got %v, want %v", err, tt.wantErr)
-        }
-    })
-}
 ```
+Phase 1: Shadow Mode
+┌──────────────────────────────────────────────────────────────┐
+│                        Request                                │
+│                           │                                   │
+│            ┌──────────────┴──────────────┐                   │
+│            ▼                              ▼                   │
+│     ┌──────────────┐              ┌──────────────┐           │
+│     │   ERPNext    │              │     Go       │           │
+│     │   (Python)   │              │   (Shadow)   │           │
+│     └──────┬───────┘              └──────┬───────┘           │
+│            │                              │                   │
+│            ▼                              ▼                   │
+│     ┌──────────────┐              ┌──────────────┐           │
+│     │   Response   │   Compare    │   Response   │           │
+│     │   (Primary)  │◄────────────►│   (Logged)   │           │
+│     └──────────────┘              └──────────────┘           │
+└──────────────────────────────────────────────────────────────┘
 
-### 4. Domain Purity
-
-**Problem:** Frappe Document classes mix persistence, validation, and UI concerns.
-
-**Solution:** Go structs contain only data and validation logic.
-
-```go
-// Pure domain struct - no DB, no HTTP, no UI
-type ModeOfPayment struct {
-    Name     string
-    Type     PaymentType
-    Enabled  bool
-    Accounts []ModeOfPaymentAccount
-}
-
-// Validation is a pure function of the data
-func (m *ModeOfPayment) Validate(lookup AccountLookup, checker POSChecker) error
+Phase 2: Traffic Switch
+┌──────────────────────────────────────────────────────────────┐
+│                        Request                                │
+│                           │                                   │
+│                           ▼                                   │
+│                    ┌──────────────┐                          │
+│                    │     Go       │ ◄── Primary now          │
+│                    │   (Primary)  │                          │
+│                    └──────────────┘                          │
+│                                                               │
+│     ERPNext (Python) still available for rollback            │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🔧 Implementation
-
-### Project Structure
+## Project Structure
 
 ```
 erpnext-go/
-├── 📄 go.mod                       # Module definition
-├── 📄 README.md                    # This file
-├── 📁 docs/                        # Detailed documentation
-│   ├── 📄 ARCHITECTURE.md          # System architecture
-│   ├── 📄 DESIGN.md                # Design decisions
-│   └── 📄 IMPLEMENTATION.md        # Implementation guide
-├── 📁 modeofpayment/               # Iteration 1: Mode of Payment
-│   ├── 📄 model.go                 # Data structures
-│   ├── 📄 validation.go            # Business rules (3 validations)
-│   └── 📄 validation_test.go       # 19 test cases
-└── 📁 taxcalc/                     # Iteration 2: Tax Calculator
-    ├── 📄 model.go                 # Data structures (170 lines)
-    ├── 📄 calculator.go            # Business logic (350+ lines)
-    └── 📄 calculator_test.go       # 24 test cases
+├── modeofpayment/     # ✅ Iteration 1: Payment methods
+├── taxcalc/           # ✅ Iteration 2: Tax calculations
+├── ledger/            # 🔄 Iteration 3: GL Entry Engine
+└── docs/
+    ├── ARCHITECTURE.md      # System design + diagrams
+    ├── DESIGN.md            # Design decisions
+    ├── IMPLEMENTATION.md    # Step-by-step guide
+    └── AI_ENGINEERING.md    # AI-assisted modernization
 ```
-
-### Module Dependency Graph
-
-```mermaid
-graph TB
-    subgraph ERPNEXT_GO["erpnext-go"]
-        direction TB
-
-        subgraph MOP["📦 modeofpayment"]
-            MOP_MODEL["model.go<br/>(structs, enums)"]
-            MOP_VAL["validation.go<br/>(business rules)"]
-            MOP_TEST["validation_test.go"]
-        end
-
-        subgraph TAX["📦 taxcalc"]
-            TAX_MODEL["model.go<br/>(Document, LineItem, TaxRow)"]
-            TAX_CALC["calculator.go<br/>(Calculate, getTaxAmount)"]
-            TAX_TEST["calculator_test.go"]
-        end
-
-        subgraph FUTURE["📦 future packages"]
-            REPO["repository<br/>(planned)"]
-            API["api<br/>(planned)"]
-        end
-
-        MOP_VAL --> MOP_MODEL
-        MOP_TEST -.->|tests| MOP_VAL
-
-        TAX_CALC --> TAX_MODEL
-        TAX_TEST -.->|tests| TAX_CALC
-
-        API -.->|will use| MOP
-        API -.->|will use| TAX
-        REPO -.->|will implement| MOP
-    end
-
-    style MOP fill:#4caf50,color:#fff
-    style TAX fill:#2196f3,color:#fff
-    style FUTURE fill:#9e9e9e,color:#fff
-```
-
-### Source Mapping
-
-| ERPNext (Python) | Go | Status |
-|------------------|-----|--------|
-| `mode_of_payment.py` | `modeofpayment/validation.go` | ✅ Migrated |
-| `mode_of_payment.json` | `modeofpayment/model.go` | ✅ Migrated |
-| `mode_of_payment_account.json` | `modeofpayment/model.go` | ✅ Migrated |
-| `test_mode_of_payment.py` | `modeofpayment/validation_test.go` | ✅ Enhanced |
-| `controllers/taxes_and_totals.py` | `taxcalc/calculator.go` | ✅ Migrated |
-| Sales Invoice Item schema | `taxcalc/model.go` | ✅ Migrated |
-| Sales Taxes and Charges schema | `taxcalc/model.go` | ✅ Migrated |
 
 ---
 
-## 💳 Iteration 1: Mode of Payment
+## Documentation
 
-### Module Selection Criteria
-
-| Criterion | Assessment | Score |
-|-----------|------------|-------|
-| 🎯 **Self-contained** | No complex dependencies | ⭐⭐⭐ |
-| 📏 **Clear boundaries** | 4 fields, 1 child table | ⭐⭐⭐ |
-| 🧪 **Testable logic** | Pure validation functions | ⭐⭐⭐ |
-| 📚 **Representative** | Common ERPNext patterns | ⭐⭐⭐ |
-
-### Business Rules Migrated
-
-#### Rule 1: No Duplicate Companies
-
-<table>
-<tr>
-<th>🐍 Python (ERPNext)</th>
-<th>🔵 Go</th>
-</tr>
-<tr>
-<td>
-
-```python
-def validate_repeating_companies(self):
-    accounts_list = []
-    for entry in self.accounts:
-        accounts_list.append(entry.company)
-
-    if len(accounts_list) != len(set(accounts_list)):
-        frappe.throw(_("Same Company is "
-            "entered more than once"))
-```
-
-</td>
-<td>
-
-```go
-func (m *ModeOfPayment) ValidateRepeatingCompanies() error {
-    seen := make(map[string]bool)
-    for _, account := range m.Accounts {
-        if seen[account.Company] {
-            return &ValidationError{
-                Err: ErrDuplicateCompany,
-                Details: fmt.Sprintf("company '%s'...",
-                    account.Company),
-            }
-        }
-        seen[account.Company] = true
-    }
-    return nil
-}
-```
-
-</td>
-</tr>
-</table>
-
-#### Rule 2: Account-Company Match
-
-<table>
-<tr>
-<th>🐍 Python (ERPNext)</th>
-<th>🔵 Go</th>
-</tr>
-<tr>
-<td>
-
-```python
-def validate_accounts(self):
-    for entry in self.accounts:
-        if frappe.get_cached_value(
-            "Account",
-            entry.default_account,
-            "company"
-        ) != entry.company:
-            frappe.throw(_("Account {0} does "
-                "not match...").format(...))
-```
-
-</td>
-<td>
-
-```go
-func (m *ModeOfPayment) ValidateAccounts(
-    lookup AccountLookup) error {
-    for _, account := range m.Accounts {
-        accountCompany, err := lookup.
-            GetAccountCompany(account.DefaultAccount)
-        if err != nil {
-            return err
-        }
-        if accountCompany != account.Company {
-            return &ValidationError{
-                Err: ErrAccountMismatch, ...}
-        }
-    }
-    return nil
-}
-```
-
-</td>
-</tr>
-</table>
-
-#### Rule 3: POS Profile Check
-
-<table>
-<tr>
-<th>🐍 Python (ERPNext)</th>
-<th>🔵 Go</th>
-</tr>
-<tr>
-<td>
-
-```python
-def validate_pos_mode_of_payment(self):
-    if not self.enabled:
-        pos_profiles = frappe.db.sql(
-            """SELECT sip.parent
-            FROM `tabSales Invoice Payment` sip
-            WHERE sip.parenttype = 'POS Profile'
-            AND sip.mode_of_payment = %s""",
-            (self.name),
-        )
-        if pos_profiles:
-            frappe.throw(_("POS Profile {} "
-                "contains...").format(...))
-```
-
-</td>
-<td>
-
-```go
-func (m *ModeOfPayment) ValidatePOSModeOfPayment(
-    checker POSChecker) error {
-    if m.Enabled {
-        return nil
-    }
-    profiles, err := checker.
-        GetPOSProfilesUsingMode(m.Name)
-    if err != nil {
-        return err
-    }
-    if len(profiles) > 0 {
-        return &ValidationError{
-            Err: ErrModeInUse, ...}
-    }
-    return nil
-}
-```
-
-</td>
-</tr>
-</table>
+| Document | What You'll Learn |
+|----------|-------------------|
+| **[Architecture](docs/ARCHITECTURE.md)** | Hexagonal architecture, bounded contexts, DDD patterns |
+| **[Design Decisions](docs/DESIGN.md)** | Why interfaces? Why typed errors? Trade-offs explained |
+| **[Implementation Guide](docs/IMPLEMENTATION.md)** | Step-by-step migration process |
+| **[AI Engineering](docs/AI_ENGINEERING.md)** | How AI accelerates legacy modernization |
+| **[Parity Report](../PARITY_REPORT.md)** | Field-by-field Python → Go comparison |
 
 ---
 
-## 🧮 Iteration 2: Tax Calculator
+## Key References
 
-### Module Selection Criteria
-
-| Criterion | Assessment | Score |
-|-----------|------------|-------|
-| 🎯 **Substantial logic** | 350+ lines of calculations | ⭐⭐⭐ |
-| 📏 **Real business rules** | Tax computation, discounts, totals | ⭐⭐⭐ |
-| 🧪 **Complex scenarios** | Multi-currency, cascading taxes | ⭐⭐⭐ |
-| 📚 **Core ERP function** | Every invoice uses this | ⭐⭐⭐ |
-
-### Python Source
-
-**File:** `erpnext/controllers/taxes_and_totals.py`
-
-This is the core calculation engine used by Sales Invoice, Purchase Invoice, Sales Order, Purchase Order, and Quotation documents.
-
-### Tax Calculation Pipeline
-
-```mermaid
-flowchart TB
-    subgraph INPUT["📥 Input"]
-        DOC["Document<br/>(Items + Taxes)"]
-    end
-
-    subgraph CALC["🔄 Calculate()"]
-        direction TB
-        ITEM["calculateItemValues()<br/>Rate, Discount, Amount"]
-        NET["calculateNetTotal()<br/>Sum Item Amounts"]
-        TAX["calculateTaxes()<br/>Apply Tax Rules"]
-        CURR["setInCompanyCurrency()<br/>Currency Conversion"]
-
-        ITEM --> NET --> TAX --> CURR
-    end
-
-    subgraph OUTPUT["📤 Output"]
-        RESULT["Document with<br/>GrandTotal, TaxAmounts"]
-    end
-
-    DOC --> CALC --> RESULT
-
-    style INPUT fill:#e3f2fd,color:#000
-    style CALC fill:#fff3e0,color:#000
-    style OUTPUT fill:#e8f5e9,color:#000
-```
-
-### Tax Charge Type Decision Tree
-
-```mermaid
-flowchart TD
-    START["getCurrentTaxAmount()"] --> CHECK{"ChargeType?"}
-
-    CHECK -->|"Actual"| ACTUAL["tax.Rate × item.NetAmount<br/>÷ doc.NetTotal"]
-    CHECK -->|"On Net Total"| NET["taxRate ÷ 100<br/>× item.NetAmount"]
-    CHECK -->|"On Previous Row Amount"| PREV_AMT["taxRate ÷ 100<br/>× prevTax.TaxAmountForCurrentItem"]
-    CHECK -->|"On Previous Row Total"| PREV_TOT["taxRate ÷ 100<br/>× prevTax.GrandTotalForCurrentItem"]
-    CHECK -->|"On Item Quantity"| QTY["taxRate<br/>× item.Qty"]
-
-    ACTUAL --> RETURN["return currentTaxAmount"]
-    NET --> RETURN
-    PREV_AMT --> RETURN
-    PREV_TOT --> RETURN
-    QTY --> RETURN
-
-    style START fill:#00add8,color:#fff
-    style CHECK fill:#ffd43b,color:#000
-    style RETURN fill:#4caf50,color:#fff
-```
-
-### Capabilities Migrated
-
-| Capability | Description | Lines |
-|------------|-------------|-------|
-| **Item Calculations** | Rate, discount, amount, net values | ~80 |
-| **Tax Calculations** | All 5 charge types with formulas | ~120 |
-| **Multi-Currency** | Transaction currency → company currency | ~50 |
-| **Totals Aggregation** | Document totals, running totals | ~60 |
-| **Item Tax Overrides** | Per-item custom tax rates | ~40 |
-
-### Charge Types Implemented
-
-| Type | Formula | Example |
-|------|---------|---------|
-| `Actual` | Fixed amount ÷ proportionally across items | Shipping: ₹100 flat |
-| `On Net Total` | Rate × Item Net Amount | GST: 18% of line |
-| `On Previous Row Amount` | Rate × Previous Tax Amount | Cess: 1% of GST |
-| `On Previous Row Total` | Rate × Previous Running Total | Education cess |
-| `On Item Quantity` | Rate × Item Qty | ₹5 per unit handling |
-
-### Code Comparison: Tax Calculation
-
-<table>
-<tr>
-<th>🐍 Python (ERPNext)</th>
-<th>🔵 Go</th>
-</tr>
-<tr>
-<td>
-
-```python
-def get_current_tax_amount(self, item, tax, item_tax_map):
-    tax_rate = self._get_tax_rate(tax, item_tax_map)
-    current_tax_amount = 0.0
-
-    if tax.charge_type == "Actual":
-        actual = flt(tax.tax_amount, tax.precision("tax_amount"))
-        current_tax_amount = (item.net_amount * actual)
-            / self.doc.net_total
-    elif tax.charge_type == "On Net Total":
-        current_tax_amount = (tax_rate / 100.0)
-            * item.net_amount
-    elif tax.charge_type == "On Previous Row Amount":
-        current_tax_amount = (tax_rate / 100.0)
-            * self.doc.taxes[tax.row_id - 1]
-                .tax_amount_for_current_item
-    # ...
-```
-
-</td>
-<td>
-
-```go
-func (c *Calculator) getCurrentTaxAmount(
-    item *LineItem, tax *TaxRow,
-    taxRate float64) float64 {
-
-    switch tax.ChargeType {
-    case Actual:
-        if c.Doc.NetTotal == 0 {
-            return 0
-        }
-        return (item.NetAmount * tax.Rate) /
-            c.Doc.NetTotal
-    case OnNetTotal:
-        return (taxRate / 100.0) * item.NetAmount
-    case OnPreviousRowAmount:
-        if tax.RowID < 1 ||
-            tax.RowID > len(c.Doc.Taxes) {
-            return 0
-        }
-        prevTax := c.Doc.Taxes[tax.RowID-1]
-        return (taxRate / 100.0) *
-            prevTax.TaxAmountForCurrentItem
-    // ...
-```
-
-</td>
-</tr>
-</table>
-
-### Test Cases: Tax Calculator (24 tests)
-
-```
-📊 Tax Calculator Test Report
-══════════════════════════════════════════════════════════════════════
-
-🧪 Suite: TestCalculateItemValues                         ✅ PASSED
-───────────────────────────────────────────────────────────────────────
-   ├─ simple_calculation                                  ✅ PASS
-   ├─ with_percentage_discount                            ✅ PASS
-   ├─ with_fixed_discount                                 ✅ PASS
-   ├─ with_currency_conversion                            ✅ PASS
-   ├─ zero_quantity                                       ✅ PASS
-   ├─ multiple_items                                      ✅ PASS
-   └─ nil_item_handling                                   ✅ PASS
-
-   📈 Cases: 7/7 passed
-
-🧪 Suite: TestCalculateNetTotal                           ✅ PASSED
-───────────────────────────────────────────────────────────────────────
-   ├─ single_item                                         ✅ PASS
-   ├─ multiple_items                                      ✅ PASS
-   └─ empty_items                                         ✅ PASS
-
-   📈 Cases: 3/3 passed
-
-🧪 Suite: TestCalculateTaxes                              ✅ PASSED
-───────────────────────────────────────────────────────────────────────
-   ├─ OnNetTotal                                          ✅ PASS
-   ├─ OnPreviousRowAmount                                 ✅ PASS
-   ├─ OnPreviousRowTotal                                  ✅ PASS
-   ├─ Actual_charge                                       ✅ PASS
-   ├─ OnItemQuantity                                      ✅ PASS
-   └─ DeductTax                                           ✅ PASS
-
-   📈 Cases: 6/6 passed
-
-🧪 Suite: TestCalculate_Integration                       ✅ PASSED
-───────────────────────────────────────────────────────────────────────
-   ├─ full_invoice_with_GST_and_shipping                  ✅ PASS
-   └─ multi_currency_USD_to_INR                           ✅ PASS
-
-   📈 Cases: 2/2 passed
-
-══════════════════════════════════════════════════════════════════════
-📊 SUMMARY: 24 tests passed | Duration: ~0.3s
-══════════════════════════════════════════════════════════════════════
-```
-
-### Why This Demonstrates Real Capability
-
-| Aspect | What It Shows |
-|--------|---------------|
-| **Complex Logic** | 5 different calculation formulas, cascading dependencies |
-| **Real-World Use** | Every ERPNext invoice uses this code path |
-| **Dependency Injection** | `PrecisionProvider` interface abstracts Frappe precision system |
-| **Edge Cases** | Division by zero, nil handling, row references |
-| **Integration Testing** | Full invoice calculation matches expected results |
+| Book | Author | Key Pattern |
+|------|--------|-------------|
+| [Monolith to Microservices](https://www.oreilly.com/library/view/monolith-to-microservices/9781492047834/) | Sam Newman | **Strangler Fig**, Branch by Abstraction |
+| [Working Effectively with Legacy Code](https://www.oreilly.com/library/view/working-effectively-with/0131177052/) | Michael Feathers | **Seams**, Characterization Tests |
+| [Domain-Driven Design](https://www.oreilly.com/library/view/domain-driven-design-tackling/0321125215/) | Eric Evans | **Bounded Contexts**, Anti-Corruption Layer |
+| [Clean Architecture](https://www.oreilly.com/library/view/clean-architecture-a/9780134494272/) | Robert C. Martin | **Ports & Adapters**, Dependency Inversion |
 
 ---
 
-## 📊 Parity Report
+## Why This Approach Works
 
-### Mode of Payment Parity
-
-| Field | Python Type | Go Type | Parity |
-|-------|-------------|---------|--------|
-| `mode_of_payment` | `DF.Data` | `string` | ✅ |
-| `type` | `DF.Literal[...]` | `PaymentType` | ✅ |
-| `enabled` | `DF.Check` | `bool` | ✅ |
-| `accounts` | `DF.Table[...]` | `[]ModeOfPaymentAccount` | ✅ |
-
-### Tax Calculator Parity
-
-| Python | Go | Tests | Parity |
-|--------|-----|-------|--------|
-| `calculate_item_values()` | `calculateItemValues()` | 7 | ✅ |
-| `calculate_net_total()` | `calculateNetTotal()` | 3 | ✅ |
-| `calculate_taxes()` | `calculateTaxes()` | 8 | ✅ |
-| `get_current_tax_amount()` | `getCurrentTaxAmount()` | 6 | ✅ |
-| `set_cumulative_total()` | `setCumulativeTotal()` | ✓ | ✅ |
-| Multi-currency conversion | `setInCompanyCurrency()` | 2 | ✅ |
-
-### Charge Types Parity
-
-| Charge Type | Python | Go | Tested |
-|-------------|--------|-----|--------|
-| Actual | ✅ | ✅ | ✅ |
-| On Net Total | ✅ | ✅ | ✅ |
-| On Previous Row Amount | ✅ | ✅ | ✅ |
-| On Previous Row Total | ✅ | ✅ | ✅ |
-| On Item Quantity | ✅ | ✅ | ✅ |
-
-### Summary
-
-| Metric | Mode of Payment | Tax Calculator | Total |
-|--------|-----------------|----------------|-------|
-| **Business Logic (lines)** | ~130 | ~350 | ~480 |
-| **Test Cases** | 19 | 24 | 43 |
-| **Coverage** | 85.3% | 85%+ | 85%+ |
-| **Data Structures** | 2 | 4 | 6 |
-| **Interfaces** | 2 | 1 | 3 |
+| Concern | Solution |
+|---------|----------|
+| "Modules have dependencies" | Interfaces abstract dependencies; mocks provide test isolation |
+| "Can't test without full stack" | Pure domain logic + injected dependencies = instant unit tests |
+| "Migration takes forever" | Extract one bounded context at a time; value delivered incrementally |
+| "How do we know it's correct?" | Shadow mode compares Python vs Go outputs before switching |
+| "What if we need to rollback?" | Feature flags control routing; legacy remains operational |
 
 ---
 
-## 🔮 Next Steps
+## Contributing
 
-### Iteration Roadmap
-
-| Iteration | Module | Status | Complexity | Lines |
-|-----------|--------|--------|------------|-------|
-| 1 | Mode of Payment | ✅ Complete | Low | ~130 |
-| 2 | Tax Calculator | ✅ Complete | High | ~350 |
-| 3 | Repository Layer | 📋 Planned | Medium | — |
-| 4 | HTTP API | 📋 Planned | Medium | — |
-| 5 | Shadow Mode | 📋 Planned | High | — |
-| 6 | Payment Entry | 📋 Planned | Medium | — |
-
-### What Students Learn
-
-| Iteration | Key Lessons |
-|-----------|-------------|
-| **Mode of Payment** | Interface-based DI, typed errors, table-driven tests |
-| **Tax Calculator** | Complex algorithms, cascading calculations, multi-currency |
-| **Repository Layer** | Adapter pattern, database abstraction |
-| **Shadow Mode** | Dual-running, comparison testing |
-
-### Future Module Priority
-
-| Priority | Module | Dependencies | Complexity |
-|----------|--------|--------------|------------|
-| 🔴 P1 | Payment Entry | Mode of Payment, Party | Medium |
-| 🔴 P1 | Pricing Rule | Item, Customer | Medium |
-| 🟡 P2 | Stock Ledger | Item, Warehouse | Medium |
-| 🟢 P3 | Sales Invoice | Tax Calculator, Payment | High |
-
----
-
-## 📚 Documentation
-
-| Document | Description |
-|----------|-------------|
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture and component diagrams |
-| [DESIGN.md](docs/DESIGN.md) | Design decisions and trade-offs |
-| [IMPLEMENTATION.md](docs/IMPLEMENTATION.md) | Step-by-step implementation guide |
-
----
-
-## 📖 References
-
-### Classic Software Engineering Books
-
-| Book | Author | Key Concepts Used |
-|------|--------|-------------------|
-| [Domain-Driven Design](https://www.oreilly.com/library/view/domain-driven-design-tackling/0321125215/) | Eric Evans | Bounded Contexts, Anti-Corruption Layer, Ubiquitous Language |
-| [Working Effectively with Legacy Code](https://www.oreilly.com/library/view/working-effectively-with/0131177052/) | Michael Feathers | Seams, Characterization Tests, Dependency Breaking |
-| [Implementing DDD](https://www.oreilly.com/library/view/implementing-domain-driven-design/9780133039900/) | Vaughn Vernon | Aggregates, Repositories, Domain Events |
-| [Monolith to Microservices](https://www.oreilly.com/library/view/monolith-to-microservices/9781492047834/) | Sam Newman | Strangler Fig, Database Decomposition |
-| [Refactoring](https://www.oreilly.com/library/view/refactoring-improving-the/9780134757681/) | Martin Fowler | Code Smells, Extract Method, Replace Conditional |
-| [Clean Architecture](https://www.oreilly.com/library/view/clean-architecture-a/9780134494272/) | Robert C. Martin | Dependency Rule, Ports & Adapters |
-
-### Online Resources
-
-- [Strangler Fig Pattern](https://martinfowler.com/bliki/StranglerFigApplication.html) — Martin Fowler
-- [Hexagonal Architecture](https://alistair.cockburn.us/hexagonal-architecture/) — Alistair Cockburn
-- [ERPNext Documentation](https://docs.erpnext.com/)
-- [Frappe Framework](https://frappeframework.com/)
-
----
-
-## 📄 License
-
-MIT License — See [LICENSE](LICENSE) for details.
+1. Pick a module from the [iteration roadmap](docs/IMPLEMENTATION.md#iteration-roadmap)
+2. Read the [AI Engineering guide](docs/AI_ENGINEERING.md) for workflow
+3. Follow existing patterns in `modeofpayment/` and `taxcalc/`
+4. Aim for 85%+ test coverage
 
 ---
 
 <p align="center">
-  <sub>Built with ❤️ for legacy modernization</sub>
+  <sub>Built with ❤️ for legacy modernization | <a href="docs/AI_ENGINEERING.md">AI-Assisted</a></sub>
 </p>
